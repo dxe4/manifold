@@ -1,0 +1,12 @@
+[package]
+name = "manifold"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "_manifold"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.20.0", features = ["extension-module"] }
+rug = "1.26.1"
