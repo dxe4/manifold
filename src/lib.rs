@@ -3,11 +3,37 @@ use pyo3::types::PyLong;
 use pyo3::types::PyAny;
 use rug::Integer;
 use std::str::FromStr;
+use pyo3::types::PyBool;
+
 
 mod math;
-use math::some_math::{get_zz};
+use math::some_math::{miller_rabin_impl};
 
 
+#[pyfunction]
+fn miller_rabin_bool(a: &PyAny) ->  PyResult<Py<PyBool>> {
+
+    fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
+        if let Ok(int_val) = obj.extract::<i64>() {
+            Ok(Integer::from(int_val))
+        } else if let Ok(str_val) = obj.extract::<String>() {
+            Integer::from_str(&str_val).map_err(|_| {
+                pyo3::exceptions::PyValueError::new_err("Invalid string for integer conversion.")
+            })
+        } else {
+            Err(pyo3::exceptions::PyTypeError::new_err(
+                "Argument must be an integer or a string.",
+            ))
+        }
+    }
+
+    let num_a = to_rug_integer(a).unwrap();
+
+    let result = miller_rabin_impl(&num_a);
+    Python::with_gil(|py|
+        Ok(PyBool::new(py, result).into_py(py))
+    )
+}
 
 #[pyfunction]
 fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
@@ -45,7 +71,9 @@ fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
 
 
 #[pymodule]
-fn _manifold(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+fn manifold_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(miller_rabin_bool, m)?)?;
     m.add_function(wrap_pyfunction!(add_numbers, m)?)?;
+    // ;
     Ok(())
 }

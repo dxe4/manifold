@@ -1,2 +1,2 @@
-uv run python -c "from manifold import add_numbers; print(add_numbers(2, 3))"
+uv run python -c "from manifold import miller_rabin; print(miller_rabin(3), type(miller_rabin(3)))"
 

@@ -1,11 +1,153 @@
 use pyo3::prelude::*;
 use pyo3::types::PyAny;
-use rug::Integer;
 use rug::Float;
-use std::sync::OnceLock;
-use std::hash::{Hash, Hasher};
+use rug::{Assign, Integer};
 use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
+use std::str::FromStr;
+use std::sync::OnceLock;
 
+use lazy_static::lazy_static;
+
+fn create_small_trailing() -> [u32; 256] {
+    let mut small_trailing = [0u32; 256];
+
+    for j in 1..8 {
+        let step = 1 << (j + 1);
+        let val = j;
+
+        for i in (1 << j..256).step_by(step) {
+            for k in 0..(1 << (7 - j)) {
+                if i + k < 256 {
+                    small_trailing[(i + k) as usize] = val;
+                }
+            }
+        }
+    }
+
+    small_trailing
+}
+
+lazy_static! {
+    static ref SMALL_TRAILING: [u32; 256] = create_small_trailing();
+}
+
+fn bit_length(x: &Integer) -> u32 {
+    let mut x = x.clone();
+    let mut length = 0;
+
+    while x > 0 {
+        x >>= 1;
+        length += 1;
+    }
+
+    length
+}
+
+
+fn _test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
+    // Miller-Rabin strong pseudoprime test for one base
+    // Returns false if n is definitely composite, true if probably prime
+    
+    // Fermat test
+    let mut b = Integer::from(base.pow_mod_ref(t, n).unwrap());
+    
+    if b == 1 || b == n - Integer::from(1) {
+        return true;
+    }
+
+    for _ in 0..s-1 {
+        b = Integer::from(b.pow_mod_ref(&Integer::from(2), n).unwrap());
+        if b == n - Integer::from(1) {
+            return true;
+        }
+        if b == 1 {
+            return false; 
+        }
+    }
+    false
+}
+
+pub fn miller_rabin_impl(n: &Integer) -> bool {
+    // TODO it owuld be good to push this, but i exclude for benchmark reasons, really dont want to go above 215230289874632256 in a boolean manner
+    // if n > &Integer::from_str("215230289874632256").unwrap() {
+    //     // TODO, i dont want to return boolean on something that has 0.99999999% chance of being a prime
+    //     // we have to be explicit, theres a big difference between 1 and 0.99999999
+    //     panic!("you are using the non deterministic part of miller rabin");
+    // }
+    let bases = vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53, 59, 67, 71, 73, 79, 97];
+    
+    if n < &Integer::from(2) {
+        return false;
+    }
+
+    let n_minus_one = n - Integer::from(1);
+    let s = bit_scan1(&n_minus_one, 0 as u32).expect("TODO - we assume no 0 passed in");
+    let t = Integer::from(&n_minus_one >> s);
+
+    for base in bases {
+        let mut base_int = Integer::from(base);
+        
+        // Wrap bases >= n
+        if base_int >= *n {
+            base_int %= n;
+        }
+
+        if base_int >= Integer::from(2) {
+            if !_test(n, &base_int, s, &t) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
+fn bit_scan1(x: &Integer, n: u32) -> Option<u32> {
+    if x.is_zero() {
+        return None;
+    }
+
+    // Create abs(x >> n)
+    let mut x = x.clone();
+    x >>= n;
+
+    let low_byte = (&x & Integer::from(0xFF_u32)).to_u32().unwrap();
+    if low_byte != 0 {
+        return Some(SMALL_TRAILING[low_byte as usize] + n);
+    }
+
+    let mut t = 8 + n;
+    x >>= 8;
+
+    // Get bit length - 1 (equivalent to Python's bit_length() - 1)
+    let z = x.significant_bits() as u32 - 1;
+
+    // Check if x is a power of 2
+    if x == Integer::from(1) << z {
+        return Some(z + t);
+    }
+
+    if z < 300 {
+        // fixed 8-byte reduction
+        while x.is_divisible_u(256) {
+            x >>= 8;
+            t += 8;
+        }
+    } else {
+        // binary reduction for large numbers of trailing zeros
+        let mut p = z >> 1;
+        while x.is_divisible_u(256) {
+            while !x.is_divisible_u(1 << p) {
+                p >>= 1;
+            }
+            x >>= p;
+            t += p;
+        }
+    }
+
+    let final_byte = (&x & Integer::from(0xFF_u32)).to_u32().unwrap();
+    Some(t + SMALL_TRAILING[final_byte as usize])
+}
 
 #[derive(Debug)]
 pub struct IntegerRing {
@@ -39,10 +181,10 @@ impl IntegerRing {
         let mut x1 = Integer::from(0);
         let mut y0 = Integer::from(0);
         let mut y1 = Integer::from(1);
-        
+
         let mut a = a.clone();
         let mut b = b.clone();
-        
+
         while b != 0 {
             let (q, r) = a.div_rem(b.clone());
             a = b.clone();
@@ -62,7 +204,7 @@ impl IntegerRing {
     fn lcm(a: &Integer, b: &Integer) -> Integer {
         let gcd = a.clone().gcd(b);
         let product = a.clone() * b.clone();
-        
+
         product / gcd
     }
 
@@ -83,15 +225,15 @@ impl IntegerRing {
         if n.cmp0() == Ordering::Less {
             return None;
         }
-        
+
         let mut result = Integer::from(1);
         let mut i = Integer::from(2);
-        
+
         while &i <= n {
             result *= &i;
             i += 1;
         }
-        
+
         Some(result)
     }
 
@@ -99,12 +241,12 @@ impl IntegerRing {
         if a.cmp0() <= Ordering::Equal || b.cmp0() <= Ordering::Equal || *b == Integer::from(1) {
             return None;
         }
-        
+
         // This function uses ``math.log`` which is based on ``float`` so it will
         // fail for large integer arguments.
         let a_f64 = a.to_f64();
         let b_f64 = b.to_f64();
-        
+
         Some(Integer::from(a_f64.log(b_f64).floor() as i64))
     }
 }

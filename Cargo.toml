@@ -1,12 +1,13 @@
 [package]
-name = "manifold"
-version = "0.1.0"
+name = "manifold_rs"
+version = "0.1.5"
 edition = "2021"
 
 [lib]
-name = "_manifold"
+name = "manifold_rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+lazy_static = "1.5.0"
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
 rug = "1.26.1"
