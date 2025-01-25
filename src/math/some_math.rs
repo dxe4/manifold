@@ -32,37 +32,24 @@ lazy_static! {
     static ref SMALL_TRAILING: [u32; 256] = create_small_trailing();
 }
 
-fn bit_length(x: &Integer) -> u32 {
-    let mut x = x.clone();
-    let mut length = 0;
-
-    while x > 0 {
-        x >>= 1;
-        length += 1;
-    }
-
-    length
-}
-
-
 fn _test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
-    // Miller-Rabin strong pseudoprime test for one base
-    // Returns false if n is definitely composite, true if probably prime
-    
-    // Fermat test
     let mut b = Integer::from(base.pow_mod_ref(t, n).unwrap());
-    
+
     if b == 1 || b == n - Integer::from(1) {
         return true;
     }
 
-    for _ in 0..s-1 {
+    if (s == 0) {
+        return false;
+    }
+
+    for _ in 0..s - 1 {
         b = Integer::from(b.pow_mod_ref(&Integer::from(2), n).unwrap());
         if b == n - Integer::from(1) {
             return true;
         }
         if b == 1 {
-            return false; 
+            return false;
         }
     }
     false
@@ -75,20 +62,20 @@ pub fn miller_rabin_impl(n: &Integer) -> bool {
     //     // we have to be explicit, theres a big difference between 1 and 0.99999999
     //     panic!("you are using the non deterministic part of miller rabin");
     // }
-    let bases = vec![2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53, 59, 67, 71, 73, 79, 97];
-    
+    let bases = vec![
+        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53, 59, 67, 71, 73, 79, 97,
+    ];
     if n < &Integer::from(2) {
         return false;
     }
 
     let n_minus_one = n - Integer::from(1);
-    let s = bit_scan1(&n_minus_one, 0 as u32).expect("TODO - we assume no 0 passed in");
-    let t = Integer::from(&n_minus_one >> s);
+    let bit_scan_result = bit_scan1(&n_minus_one, 0 as u32);
+    let s = bit_scan_result.expect("TODO - we assume no 0 passed in");
+    let t = Integer::from(n >> s);
 
     for base in bases {
         let mut base_int = Integer::from(base);
-        
-        // Wrap bases >= n
         if base_int >= *n {
             base_int %= n;
         }
@@ -106,10 +93,9 @@ fn bit_scan1(x: &Integer, n: u32) -> Option<u32> {
     if x.is_zero() {
         return None;
     }
-
-    // Create abs(x >> n)
     let mut x = x.clone();
     x >>= n;
+    x = x.abs();
 
     let low_byte = (&x & Integer::from(0xFF_u32)).to_u32().unwrap();
     if low_byte != 0 {
@@ -119,25 +105,21 @@ fn bit_scan1(x: &Integer, n: u32) -> Option<u32> {
     let mut t = 8 + n;
     x >>= 8;
 
-    // Get bit length - 1 (equivalent to Python's bit_length() - 1)
     let z = x.significant_bits() as u32 - 1;
 
-    // Check if x is a power of 2
     if x == Integer::from(1) << z {
         return Some(z + t);
     }
 
     if z < 300 {
-        // fixed 8-byte reduction
-        while x.is_divisible_u(256) {
+        while (x.clone() & Integer::from(0xFF_u32)) == 0 {
             x >>= 8;
             t += 8;
         }
     } else {
-        // binary reduction for large numbers of trailing zeros
         let mut p = z >> 1;
-        while x.is_divisible_u(256) {
-            while !x.is_divisible_u(1 << p) {
+        while (&x & Integer::from(0xFF_u32)) == 0 {
+            while &x & ((1 << p) - Integer::from(1)) != 0 {
                 p >>= 1;
             }
             x >>= p;

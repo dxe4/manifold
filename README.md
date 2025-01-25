@@ -1,10 +1,45 @@
 number theory playground
 port some logic from sympy to rust and run benchmakrs
 
-miller rabin benchmark for numbers 1,200
-the speedup hypothetically is higher for larger numbers
-but this version crashes above 255
-this is likey caused by the logic in SMALL_TRAILING
-needs trouble shooting
+```
+miller rabin benchmark
+trials: 5
+MIN, MAX = 10**6, 10**7
 
-trials: 100000 sympy total:123.5343531339895 avg: 0.001235 seconds -- rust total: 34.366217914037406 avg 0.0003436621791403741
+sympy total:147.42906583601143 avg: 29.485813 seconds
+rust total: 36.66850686294492 avg 7.333701372588985
+
+```
+from manifold_rs import miller_rabin_bool
+from sympy.ntheory.primetest import mr as miller_rabin
+miller_rabin(i, [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53, 59, 67, 71, 73, 79, 97])
+miller_rabin_bool(i)
+```
+
+this needs to use less bases, like so
+```
+if n < 2047:
+    a = [2]
+if n < 1373653:
+    a = [2, 3]
+if n < 9080191:
+    a = [31, 73]
+if n < 25326001:
+    a = [2, 3, 5]
+if n < 3215031751:
+    a = [2, 3, 5, 7]
+if n < 4759123141:
+    a = [2, 7, 61]
+if n < 1122004669633:
+    a = [2, 13, 23, 1662803]
+if n < 2152302898747:
+    a = [2, 3, 5, 7, 11]
+if n < 3474749660383:
+    a = [2, 3, 5, 7, 11, 13]
+if n < 341550071728321:
+    a = [2, 3, 5, 7, 11, 13, 17]
+if n < 3825123056546413051:
+    a = [2, 3, 5, 7, 11, 13, 17, 19, 23]
+else:
+    a = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
+```
