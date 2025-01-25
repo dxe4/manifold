@@ -8,6 +8,7 @@ MIN, MAX = 10**6, 10**7
 
 sympy total:147.42906583601143 avg: 29.485813 seconds
 rust total: 36.66850686294492 avg 7.333701372588985
+```
 
 ```
 from manifold_rs import miller_rabin_bool
