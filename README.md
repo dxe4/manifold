@@ -43,3 +43,10 @@ if n < 3825123056546413051:
 else:
     a = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37]
 ```
+
+run insructions:
+```
+use build_incremental.sh for faster builds
+use build.sh for slower builds
+use build_release.sh for production code (this should run faster, needed for benchmarks)
+```
