@@ -56,12 +56,13 @@ fn _test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
 }
 
 pub fn miller_rabin_impl(n: &Integer) -> bool {
-    // TODO it owuld be good to push this, but i exclude for benchmark reasons, really dont want to go above 215230289874632256 in a boolean manner
-    // if n > &Integer::from_str("215230289874632256").unwrap() {
-    //     // TODO, i dont want to return boolean on something that has 0.99999999% chance of being a prime
-    //     // we have to be explicit, theres a big difference between 1 and 0.99999999
-    //     panic!("you are using the non deterministic part of miller rabin");
-    // }
+    if n > &Integer::from_str("3317044064679887385961981").unwrap() {
+        // i dont want to return boolean on something that has 0.99999999% chance of being a prime
+        // we have to be explicit, theres a big difference between 1 and 0.99999999
+        panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
+    }
+    // TODO bases can be optimised https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
+    // we have to pick it from there, sympy is only using miller rabin for the numbers which is optimal for
     let bases = vec![
         2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53, 59, 67, 71, 73, 79, 97,
     ];
