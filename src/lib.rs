@@ -1,18 +1,14 @@
 use pyo3::prelude::*;
-use pyo3::types::PyLong;
 use pyo3::types::PyAny;
+use pyo3::types::PyBool;
 use rug::Integer;
 use std::str::FromStr;
-use pyo3::types::PyBool;
-
 
 mod math;
-use math::some_math::{miller_rabin_impl};
-
+use math::some_math::miller_rabin_impl;
 
 #[pyfunction]
-fn miller_rabin_bool(a: &PyAny) ->  PyResult<Py<PyBool>> {
-
+fn miller_rabin_bool(a: &PyAny) -> PyResult<Py<PyBool>> {
     fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
         if let Ok(int_val) = obj.extract::<i64>() {
             Ok(Integer::from(int_val))
@@ -30,14 +26,11 @@ fn miller_rabin_bool(a: &PyAny) ->  PyResult<Py<PyBool>> {
     let num_a = to_rug_integer(a).unwrap();
 
     let result = miller_rabin_impl(&num_a);
-    Python::with_gil(|py|
-        Ok(PyBool::new(py, result).into_py(py))
-    )
+    Python::with_gil(|py| Ok(PyBool::new(py, result).into_py(py)))
 }
 
 #[pyfunction]
 fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
-
     fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
         if let Ok(int_val) = obj.extract::<i64>() {
             Ok(Integer::from(int_val))
@@ -67,8 +60,6 @@ fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
         }
     })
 }
-
-
 
 #[pymodule]
 fn manifold_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {

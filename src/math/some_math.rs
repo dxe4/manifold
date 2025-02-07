@@ -1,13 +1,107 @@
 use pyo3::prelude::*;
-use pyo3::types::PyAny;
-use rug::Float;
-use rug::{Assign, Integer};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rug::ops::RemRoundingAssign;
+use rug::Integer;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::str::FromStr;
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering as AtomicOrdering;
 use std::sync::OnceLock;
 
 use lazy_static::lazy_static;
+
+lazy_static! {
+    /*
+    https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Testing_against_small_sets_of_bases
+    */
+    static ref BASES_2: [Integer; 1] = [Integer::from(2)];
+    static ref BASES_2_3: [Integer; 2] = [Integer::from(2), Integer::from(3)];
+    static ref BASES_31_73: [Integer; 2] = [Integer::from(31), Integer::from(73)];
+    static ref BASES_2_3_5: [Integer; 3] = [Integer::from(2), Integer::from(3), Integer::from(5)];
+    static ref BASES_2_3_5_7: [Integer; 4] = [
+        Integer::from(2),
+        Integer::from(3),
+        Integer::from(5),
+        Integer::from(7),
+    ];
+    static ref BASES_2_7_61: [Integer; 3] = [Integer::from(2), Integer::from(7), Integer::from(61)];
+    static ref BASES_2_13_23_1662803: [Integer; 4] = [
+        Integer::from(2),
+        Integer::from(13),
+        Integer::from(23),
+        Integer::from(1662803),
+    ];
+    static ref BASES_2_3_5_7_11: [Integer; 5] = [
+        Integer::from(2),
+        Integer::from(3),
+        Integer::from(5),
+        Integer::from(7),
+        Integer::from(11),
+    ];
+    static ref BASES_2_3_5_7_11_13: [Integer; 6] = [
+        Integer::from(2),
+        Integer::from(3),
+        Integer::from(5),
+        Integer::from(7),
+        Integer::from(11),
+        Integer::from(13),
+    ];
+    static ref BASES_2_3_5_7_11_13_17: [Integer; 7] = [
+        Integer::from(2),
+        Integer::from(3),
+        Integer::from(5),
+        Integer::from(7),
+        Integer::from(11),
+        Integer::from(13),
+        Integer::from(17),
+    ];
+    static ref BASES_2_3_5_7_11_13_17_19_23: [Integer; 9] = [
+        Integer::from(2),
+        Integer::from(3),
+        Integer::from(5),
+        Integer::from(7),
+        Integer::from(11),
+        Integer::from(13),
+        Integer::from(17),
+        Integer::from(19),
+        Integer::from(23),
+    ];
+    static ref BASES_ALL: [Integer; 12] = [
+        Integer::from(2),
+        Integer::from(3),
+        Integer::from(5),
+        Integer::from(7),
+        Integer::from(11),
+        Integer::from(13),
+        Integer::from(17),
+        Integer::from(19),
+        Integer::from(23),
+        Integer::from(29),
+        Integer::from(31),
+        Integer::from(37),
+    ];
+}
+
+fn miller_rabin_bases(n: &Integer) -> &'static [Integer] {
+    match n.cmp0() {
+        std::cmp::Ordering::Less => &[],
+        _ => match n.to_u64().unwrap_or(u64::MAX) {
+            0..=2046 => &BASES_2[..],
+            2047..=1373652 => &BASES_2_3[..],
+            1373653..=9080190 => &BASES_31_73[..],
+            9080191..=25326000 => &BASES_2_3_5[..],
+            25326001..=3215031750 => &BASES_2_3_5_7[..],
+            3215031751..=4759123140 => &BASES_2_7_61[..],
+            4759123141..=1122004669632 => &BASES_2_13_23_1662803[..],
+            1122004669633..=2152302898746 => &BASES_2_3_5_7_11[..],
+            2152302898747..=3474749660382 => &BASES_2_3_5_7_11_13[..],
+            3474749660383..=341550071728320 => &BASES_2_3_5_7_11_13_17[..],
+            341550071728321..=3825123056546413050 => &BASES_2_3_5_7_11_13_17_19_23[..],
+            _ => &BASES_ALL[..],
+        },
+    }
+}
 
 fn create_small_trailing() -> [u32; 256] {
     let mut small_trailing = [0u32; 256];
@@ -39,7 +133,7 @@ fn _test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
         return true;
     }
 
-    if (s == 0) {
+    if s == 0 {
         return false;
     }
 
@@ -56,16 +150,14 @@ fn _test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
 }
 
 pub fn miller_rabin_impl(n: &Integer) -> bool {
-    if n > &Integer::from_str("3317044064679887385961981").unwrap() {
+    if n >= &Integer::from_str("3317044064679887385961981").unwrap() {
         // i dont want to return boolean on something that has 0.99999999% chance of being a prime
         // we have to be explicit, theres a big difference between 1 and 0.99999999
         panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
     }
-    // TODO bases can be optimised https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test
-    // we have to pick it from there, sympy is only using miller rabin for the numbers which is optimal for
-    let bases = vec![
-        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53, 59, 67, 71, 73, 79, 97,
-    ];
+    let bases = miller_rabin_bases(n);
+    let result = AtomicBool::new(true);
+
     if n < &Integer::from(2) {
         return false;
     }
@@ -75,19 +167,29 @@ pub fn miller_rabin_impl(n: &Integer) -> bool {
     let s = bit_scan_result.expect("TODO - we assume no 0 passed in");
     let t = Integer::from(n >> s);
 
-    for base in bases {
-        let mut base_int = Integer::from(base);
-        if base_int >= *n {
-            base_int %= n;
+    let par_result = bases.par_iter().try_for_each(|base| {
+        if !result.load(AtomicOrdering::Relaxed) {
+            return Err(());
         }
 
-        if base_int >= Integer::from(2) {
-            if !_test(n, &base_int, s, &t) {
-                return false;
+        let base_ = if base >= n {
+            base.clone() % n
+        } else {
+            base.clone()
+        };
+
+        if base_ >= Integer::from(2) {
+            if !_test(n, &base, s, &t) {
+                result.store(false, AtomicOrdering::Relaxed);
+                return Err(());
             }
         }
+        Ok(())
+    });
+    match par_result {
+        Ok(_) => true,
+        Err(_) => false,
     }
-    true
 }
 
 fn bit_scan1(x: &Integer, n: u32) -> Option<u32> {
