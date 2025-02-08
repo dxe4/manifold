@@ -1,45 +1,83 @@
+use lazy_static::lazy_static;
+use num_cpus;
+use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::ThreadPool;
+use rayon::ThreadPoolBuilder;
 use rug::ops::RemRoundingAssign;
-use rug::Integer;
+use rug::{Complete, Integer};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::iter::successors;
+use std::panic::{self, AssertUnwindSafe};
 use std::str::FromStr;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering as AtomicOrdering;
-use std::sync::OnceLock;
+use std::sync::Once;
+use std::sync::{Arc, OnceLock};
 
-use lazy_static::lazy_static;
+static SMALL_POOL: OnceLock<Arc<ThreadPool>> = OnceLock::new();
+static LARGE_POOL: OnceLock<Arc<ThreadPool>> = OnceLock::new();
+
+fn get_small_pool() -> Arc<ThreadPool> {
+    SMALL_POOL
+        .get_or_init(|| {
+            Arc::new(
+                ThreadPoolBuilder::new()
+                    // .stack_size(28 * 1024 * 1024)
+                    .num_threads(2)
+                    .build()
+                    .expect("Failed to create small pool"),
+            )
+        })
+        .clone()
+}
+
+fn get_large_pool() -> Arc<ThreadPool> {
+    let num_cpus = num_cpus::get() - 1;
+    LARGE_POOL
+        .get_or_init(|| {
+            Arc::new(
+                ThreadPoolBuilder::new()
+                    // .stack_size(28 * 1024 * 1024)
+                    .num_threads((num_cpus).max(1))
+                    .build()
+                    .expect("Failed to create large pool"),
+            )
+        })
+        .clone()
+}
 
 lazy_static! {
-    /*
-    https://en.wikipedia.org/wiki/Miller%E2%80%93Rabin_primality_test#Testing_against_small_sets_of_bases
-    */
-    static ref BASES_2: [Integer; 1] = [Integer::from(2)];
-    static ref BASES_2_3: [Integer; 2] = [Integer::from(2), Integer::from(3)];
-    static ref BASES_31_73: [Integer; 2] = [Integer::from(31), Integer::from(73)];
-    static ref BASES_2_3_5: [Integer; 3] = [Integer::from(2), Integer::from(3), Integer::from(5)];
-    static ref BASES_2_3_5_7: [Integer; 4] = [
+    static ref EMPTY_BASES: Vec<Integer> = Vec::new();
+    static ref BASES_2: Vec<Integer> = vec![Integer::from(2)];
+    static ref BASES_2_3: Vec<Integer> = vec![Integer::from(2), Integer::from(3)];
+    static ref BASES_31_73: Vec<Integer> = vec![Integer::from(31), Integer::from(73)];
+    static ref BASES_2_3_5: Vec<Integer> =
+        vec![Integer::from(2), Integer::from(3), Integer::from(5)];
+    static ref BASES_2_3_5_7: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(3),
         Integer::from(5),
         Integer::from(7),
     ];
-    static ref BASES_2_7_61: [Integer; 3] = [Integer::from(2), Integer::from(7), Integer::from(61)];
-    static ref BASES_2_13_23_1662803: [Integer; 4] = [
+    static ref BASES_2_7_61: Vec<Integer> =
+        vec![Integer::from(2), Integer::from(7), Integer::from(61)];
+    static ref BASES_2_13_23_1662803: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(13),
         Integer::from(23),
         Integer::from(1662803),
     ];
-    static ref BASES_2_3_5_7_11: [Integer; 5] = [
+    static ref BASES_2_3_5_7_11: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(3),
         Integer::from(5),
         Integer::from(7),
         Integer::from(11),
     ];
-    static ref BASES_2_3_5_7_11_13: [Integer; 6] = [
+    static ref BASES_2_3_5_7_11_13: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(3),
         Integer::from(5),
@@ -47,7 +85,7 @@ lazy_static! {
         Integer::from(11),
         Integer::from(13),
     ];
-    static ref BASES_2_3_5_7_11_13_17: [Integer; 7] = [
+    static ref BASES_2_3_5_7_11_13_17: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(3),
         Integer::from(5),
@@ -56,7 +94,7 @@ lazy_static! {
         Integer::from(13),
         Integer::from(17),
     ];
-    static ref BASES_2_3_5_7_11_13_17_19_23: [Integer; 9] = [
+    static ref BASES_2_3_5_7_11_13_17_19_23: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(3),
         Integer::from(5),
@@ -67,7 +105,7 @@ lazy_static! {
         Integer::from(19),
         Integer::from(23),
     ];
-    static ref BASES_ALL: [Integer; 12] = [
+    static ref BASES_ALL: Vec<Integer> = vec![
         Integer::from(2),
         Integer::from(3),
         Integer::from(5),
@@ -83,22 +121,22 @@ lazy_static! {
     ];
 }
 
-fn miller_rabin_bases(n: &Integer) -> &'static [Integer] {
+fn miller_rabin_bases(n: &Integer) -> &'static Vec<Integer> {
     match n.cmp0() {
-        std::cmp::Ordering::Less => &[],
+        std::cmp::Ordering::Less => &EMPTY_BASES,
         _ => match n.to_u64().unwrap_or(u64::MAX) {
-            0..=2046 => &BASES_2[..],
-            2047..=1373652 => &BASES_2_3[..],
-            1373653..=9080190 => &BASES_31_73[..],
-            9080191..=25326000 => &BASES_2_3_5[..],
-            25326001..=3215031750 => &BASES_2_3_5_7[..],
-            3215031751..=4759123140 => &BASES_2_7_61[..],
-            4759123141..=1122004669632 => &BASES_2_13_23_1662803[..],
-            1122004669633..=2152302898746 => &BASES_2_3_5_7_11[..],
-            2152302898747..=3474749660382 => &BASES_2_3_5_7_11_13[..],
-            3474749660383..=341550071728320 => &BASES_2_3_5_7_11_13_17[..],
-            341550071728321..=3825123056546413050 => &BASES_2_3_5_7_11_13_17_19_23[..],
-            _ => &BASES_ALL[..],
+            0..=2046 => &BASES_2,
+            2047..=1373652 => &BASES_2_3,
+            1373653..=9080190 => &BASES_31_73,
+            9080191..=25326000 => &BASES_2_3_5,
+            25326001..=3215031750 => &BASES_2_3_5_7,
+            3215031751..=4759123140 => &BASES_2_7_61,
+            4759123141..=1122004669632 => &BASES_2_13_23_1662803,
+            1122004669633..=2152302898746 => &BASES_2_3_5_7_11,
+            2152302898747..=3474749660382 => &BASES_2_3_5_7_11_13,
+            3474749660383..=341550071728320 => &BASES_2_3_5_7_11_13_17,
+            341550071728321..=3825123056546413050 => &BASES_2_3_5_7_11_13_17_19_23,
+            _ => &BASES_ALL,
         },
     }
 }
@@ -149,47 +187,54 @@ fn _test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
     false
 }
 
-pub fn miller_rabin_impl(n: &Integer) -> bool {
-    if n >= &Integer::from_str("3317044064679887385961981").unwrap() {
-        // i dont want to return boolean on something that has 0.99999999% chance of being a prime
-        // we have to be explicit, theres a big difference between 1 and 0.99999999
-        panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
-    }
-    let bases = miller_rabin_bases(n);
-    let result = AtomicBool::new(true);
-
-    if n < &Integer::from(2) {
+pub fn miller_rabin_single(number: &Integer) -> bool {
+    if number < &Integer::from(2) {
         return false;
     }
 
-    let n_minus_one = n - Integer::from(1);
-    let bit_scan_result = bit_scan1(&n_minus_one, 0 as u32);
+    let n_minus_one = number - Integer::from(1);
+    let bit_scan_result = bit_scan1(&n_minus_one, 0);
     let s = bit_scan_result.expect("TODO - we assume no 0 passed in");
-    let t = Integer::from(n >> s);
+    let t = Integer::from(number >> s);
 
-    let par_result = bases.par_iter().try_for_each(|base| {
-        if !result.load(AtomicOrdering::Relaxed) {
-            return Err(());
-        }
+    let bases = miller_rabin_bases(number);
 
-        let base_ = if base >= n {
-            base.clone() % n
+    for base in bases.iter() {
+        let base_mod = if base >= number {
+            (base % number).complete()
         } else {
             base.clone()
         };
 
-        if base_ >= Integer::from(2) {
-            if !_test(n, &base, s, &t) {
-                result.store(false, AtomicOrdering::Relaxed);
-                return Err(());
-            }
+        if base_mod >= Integer::from(2) && !_test(number, &base_mod, s, &t) {
+            return false;
         }
-        Ok(())
-    });
-    match par_result {
-        Ok(_) => true,
-        Err(_) => false,
     }
+
+    true
+}
+
+pub fn miller_rabin_impl(low: &Integer, high: &Integer) -> Vec<bool> {
+    if low > high {
+        panic!("low > high");
+    }
+
+    if high >= &Integer::from_str("3317044064679887385961981").unwrap() {
+        // i dont want to return boolean on something that has 0.99999999% chance of being a prime
+        // we have to be explicit, theres a big difference between 1 and 0.99999999
+        panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
+    }
+    let mut range_vec: Vec<Integer> = Vec::new();
+    let mut current = low.clone();
+    while current <= *high {
+        range_vec.push(current.clone());
+        current += 1;
+    }
+
+    let pool = get_large_pool();
+    let pool_map = pool.install(|| range_vec.par_iter().map(|x| miller_rabin_single(x)));
+    let res = pool_map.collect::<Vec<bool>>();
+    return res;
 }
 
 fn bit_scan1(x: &Integer, n: u32) -> Option<u32> {
@@ -353,4 +398,17 @@ impl Hash for IntegerRing {
 static ZZ: OnceLock<IntegerRing> = OnceLock::new();
 pub fn get_zz() -> &'static IntegerRing {
     ZZ.get_or_init(|| IntegerRing::new())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_miller_rabin_multiple() {
+        let low = &Integer::from_str("341550071728321").unwrap();
+
+        let high = (low + 1e7 as u32).complete();
+        let result = miller_rabin_impl(low, &high);
+    }
 }

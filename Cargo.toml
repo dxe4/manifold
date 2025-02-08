@@ -1,6 +1,6 @@
 [package]
 name = "manifold_rs"
-version = "0.1.23"
+version = "0.1.37"
 edition = "2021"
 
 [lib]
@@ -9,6 +9,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 lazy_static = "1.5.0"
+num_cpus = "1.16.0"
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
 rayon = "1.10.0"
 rug = "1.26.1"

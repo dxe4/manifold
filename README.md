@@ -3,10 +3,9 @@ port some logic from sympy to rust and run benchmakrs
 
 
 ```
-miller rabin benchmark
 trials: 5 iteration MIN: 341550071728321 MAX: 341550072728321
-sympy total:40.72718977800105 avg: 8.145438 seconds
-rust total: 4.557686814980116 avg 0.9115373629960232
+sympy total:42.77055257698521 avg: 8.554111 seconds
+rust total: 1.2769192990090232 avg 0.25538385980180467
 ```
 
 ```

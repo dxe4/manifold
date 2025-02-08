@@ -1,4 +1,4 @@
-from manifold_rs import miller_rabin_bool
+from manifold_rs import miller_rabin_bool, miller_rabin_bool_multiple
 
 import timeit
 from sympy.ntheory.primetest import mr as miller_rabin
@@ -44,8 +44,9 @@ def benchmark_miller_rabin(num_trials=5):
             is_prime = miller_rabin(i, bases)
 
     def miller_rabin_test_rust():
-        for i in range(MIN, MAX):
-            is_prime = miller_rabin_bool(i)
+        miller_rabin_bool_multiple(MIN, MAX)
+        # for i in range(MIN, MAX):
+        #     is_prime = miller_rabin_bool(i)
 
     total_time_py = timeit.timeit(miller_rabin_test, number=num_trials)
     total_time_rust = timeit.timeit(miller_rabin_test_rust, number=num_trials)
@@ -56,6 +57,5 @@ def benchmark_miller_rabin(num_trials=5):
         f"sympy total:{total_time_py} avg: {avg_time_python:.6f} seconds \n"
         f"rust total: {total_time_rust} avg {avg_time_rust} \n"
     )
-
 
 benchmark_miller_rabin()

@@ -160,7 +160,7 @@ wheels = [
 
 [[package]]
 name = "manifold"
-version = "0.1.21"
+version = "0.1.37"
 source = { editable = "." }
 dependencies = [
     { name = "sympy" },

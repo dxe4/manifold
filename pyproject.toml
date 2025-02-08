@@ -4,13 +4,11 @@ build-backend = "maturin"
 
 [project]
 name = "manifold"
-version = "0.1.21"
+version = "0.1.37"
 description = "A Python library with Rust implementation"
 authors = [{ name = "Your Name", email = "your.email@example.com" }]
 requires-python = ">=3.8"
-dependencies = [
-    "sympy>=1.13.3",
-]
+dependencies = ["sympy>=1.13.3"]
 
 [tool.maturin]
 python-source = "manifold"
