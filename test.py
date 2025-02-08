@@ -34,6 +34,7 @@ def get_base(n):
 
 # MIN, MAX = 10**3, 10**5
 MIN, MAX = 341550071728321, 341550071728321 + 10**6
+# MIN, MAX = 3825123056546413051 - 10**6, 3825123056546413051
 
 
 def benchmark_miller_rabin(num_trials=5):

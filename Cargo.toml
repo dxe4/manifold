@@ -8,6 +8,7 @@ name = "manifold_rs"
 crate-type = ["cdylib"]
 
 [dependencies]
+indexmap = "2.7.1"
 lazy_static = "1.5.0"
 num_cpus = "1.16.0"
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
