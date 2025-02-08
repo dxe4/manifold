@@ -1,20 +1,12 @@
 use lazy_static::lazy_static;
 use num_cpus;
-use pyo3::exceptions::PyRuntimeError;
-use pyo3::prelude::*;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rayon::ThreadPool;
 use rayon::ThreadPoolBuilder;
-use rug::ops::RemRoundingAssign;
 use rug::{Complete, Integer};
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use std::iter::successors;
-use std::panic::{self, AssertUnwindSafe};
 use std::str::FromStr;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering as AtomicOrdering;
-use std::sync::Once;
 use std::sync::{Arc, OnceLock};
 
 static SMALL_POOL: OnceLock<Arc<ThreadPool>> = OnceLock::new();
