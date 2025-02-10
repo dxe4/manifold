@@ -5,7 +5,7 @@ use rug::Integer;
 use std::str::FromStr;
 
 mod math;
-use math::inneficient::partition_number_euler_175_e;
+use math::inneficient::sum_of_factors_from_pentagonal_numbers;
 use math::some_math::miller_rabin_impl;
 
 fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {

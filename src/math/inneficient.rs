@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 /*
 this file is for research
 */
@@ -12,16 +14,30 @@ lazy_static! {
 }
 
 pub fn pentagonal_number_index(i: &Integer) -> (Integer, Integer) {
+    // f(n) n(3n - 1) / 1, n = -1/+1
     (
         ((i * (THREE.clone() * i + ONE.clone())) / TWO.clone()) - ONE.clone(),
         ((i * (THREE.clone() * i - ONE.clone())) / TWO.clone()) - ONE.clone(),
     )
 }
 
-pub fn partition_number_euler_175_e(target: Integer) -> Vec<Integer> {
-    // https://arxiv.org/pdf/math/0505373
+pub fn sum_of_factors_from_pentagonal_numbers(target: Integer) -> Vec<Integer> {
+    /*
+
     // https://scholarlycommons.pacific.edu/euler-works/158/
     // https://scholarlycommons.pacific.edu/euler-works/175/
+    // https://arxiv.org/pdf/math/0505373
+
+    This finds the sum of all the factors of a number
+    For a prime N it will always be n + 1
+    euler wrote 2 papers on this
+    adding a fib like sum
+    but the indices to add are determined by the pentagolan numbers
+    list[p0] + list[p1] - list[p2] - list[p3] + list[p4] where Pn is a pentagonal number
+    the signs are [+,+,-,-][idx % 4]
+    we avoid modulo for performance
+    */
+
     let mut left: Vec<Integer> = vec![Integer::from(1), Integer::from(1)];
     // we may want to use a queue here,
     // but will have to keep a hashmap for the lookup
@@ -73,7 +89,7 @@ mod tests {
     fn test_simpple_partition_number() {
         let num = Integer::from(16);
 
-        let result = partition_number_euler_175_e(num);
+        let result = sum_of_factors_from_pentagonal_numbers(num);
         println!("{:?}", result);
         assert!(result[11] == 12);
         assert!(result[5] == 6);
