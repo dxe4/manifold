@@ -7,6 +7,8 @@ use std::str::FromStr;
 mod math;
 use math::inneficient::sum_of_factors_from_pentagonal_numbers;
 use math::primes::miller_rabin_impl;
+use math::padic::two_pow_10_pow_n_parallel;
+
 
 fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
     let str_val = obj.str()?.to_string();
@@ -69,11 +71,17 @@ fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
     })
 }
 
+
+#[pyfunction]
+fn power_of_two_exponent_10n_py(start: usize, end: usize) -> PyResult<Vec<String>> {
+    Ok(two_pow_10_pow_n_parallel(start, end))
+}
+
 #[pymodule]
 fn manifold_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(miller_rabin_bool, m)?)?;
     m.add_function(wrap_pyfunction!(add_numbers, m)?)?;
     m.add_function(wrap_pyfunction!(miller_rabin_bool_multiple, m)?)?;
-    // ;
+    m.add_function(wrap_pyfunction!(power_of_two_exponent_10n_py, m)?)?;
     Ok(())
 }
