@@ -5,25 +5,9 @@ use rug::Integer;
 use rug::ops::Pow;
 use rayon::prelude::*;
 use super::threading::get_large_pool;
+use super::num_utils::pow_large;
 
 const DIGIT_LIMIT: u32 = 250;
-
-fn pow_large(base: &Integer, exponent: &Integer) -> Integer {
-    let mut result = Integer::from(1);
-    let mut base = base.clone();
-    let mut exponent = exponent.clone();
-
-    while exponent > 0 {
-        if exponent.is_odd() {
-            result *= &base;
-        }
-        let temp = base.clone();
-        base *= &temp;
-        exponent >>= 1;
-    }
-
-    result
-}
 
 pub fn two_pow_10_pow_n_parallel(start: usize, end: usize) -> Vec<String> {
     /*
