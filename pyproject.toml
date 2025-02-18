@@ -4,25 +4,22 @@ build-backend = "maturin"
 
 [project]
 name = "manifold"
-version = "0.1.46"
+version = "0.1.49"
 description = "A Python library with Rust implementation"
-requires-python = "==3.12.*"
+requires-python = "==3.13.*"
 dependencies = [ "maturin>=1.8.2", "sympy>=1.13.3", "toml>=0.10.2",]
 [[project.authors]]
 name = "Your Name"
 email = "your.email@example.com"
 
 [dependency-groups]
-dev = [
- "ipython>=8.12.3",
- "pytest>=8.3.4",
-]
+dev = [ "ipython>=8.12.3", "pytest>=8.3.4",]
+
+[pytest]
+python_files = "tests.py test_*.py *_tests.py test.py"
+testpaths = "tests"
 
 [tool.maturin]
 python-source = "manifold"
 features = [ "pyo3/extension-module",]
 module-name = "manifold_rs"
-
-[pytest]
-python_files = "tests.py test_*.py *_tests.py test.py"
-testpaths = "tests"

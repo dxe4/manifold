@@ -7,7 +7,7 @@ use std::str::FromStr;
 mod math;
 use math::inneficient::sum_of_factors_from_pentagonal_numbers;
 use math::primes::miller_rabin_impl;
-use math::padic::two_pow_10_pow_n_parallel;
+use math::padic::{x_pow_y_pow_z_mod_k, NumberConfig};
 
 
 fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
@@ -74,7 +74,12 @@ fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
 
 #[pyfunction]
 fn power_of_two_exponent_10n_py(start: usize, end: usize) -> PyResult<Vec<String>> {
-    Ok(two_pow_10_pow_n_parallel(start, end))
+    let config = NumberConfig {
+        start: start,
+        end: end,
+        ..Default::default()
+    };
+    Ok(x_pow_y_pow_z_mod_k(config))
 }
 
 #[pymodule]
