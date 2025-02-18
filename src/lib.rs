@@ -8,6 +8,7 @@ mod math;
 use math::inneficient::sum_of_factors_from_pentagonal_numbers;
 use math::primes::miller_rabin_impl;
 use math::padic::{x_pow_y_pow_z_mod_k, NumberConfig};
+use math::fib_calc::fib_matrix;
 
 
 fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
