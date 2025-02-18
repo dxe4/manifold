@@ -59,4 +59,5 @@ def benchmark_miller_rabin(num_trials=5):
         f"rust total: {total_time_rust} avg {avg_time_rust} \n"
     )
 
+
 benchmark_miller_rabin()

@@ -9,6 +9,7 @@ def get_version_from_cargo():
         print(f"Error reading Cargo.toml: {e}")
         return None
 
+
 def increment_patch_version(version):
     major, minor, patch = map(int, version.split("."))
     patch += 1
