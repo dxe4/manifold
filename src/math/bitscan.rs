@@ -3,18 +3,15 @@ use rug::{Complete, Integer};
 
 fn create_small_trailing() -> [u32; 256] {
     let mut small_trailing = [0u32; 256];
-
-    for j in 1..8 {
-        let step = 1 << (j + 1);
-        let val = j;
-
-        for i in (1 << j..256).step_by(step) {
-            for k in 0..(1 << (7 - j)) {
-                if i + k < 256 {
-                    small_trailing[(i + k) as usize] = val;
-                }
-            }
+    small_trailing[0] = 0;
+    for i in 1..256 {
+        let mut val = 0;
+        let mut num = i;
+        while (num & 1) == 0 && val < 8 {
+            val += 1;
+            num >>= 1;
         }
+        small_trailing[i] = val;
     }
 
     small_trailing
