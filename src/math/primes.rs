@@ -41,8 +41,17 @@ pub fn miller_rabin_single(number: &Integer) -> bool {
         panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
     }
 
-    if number < &Integer::from(2) {
+    if number <= &Integer::from(1) {
         return false;
+    }
+    if number == &Integer::from(2) {
+        return true;
+    }
+    if number.is_even() {
+        return false;
+    }
+    if number == &Integer::from(3) {
+        return true;
     }
 
     let n_minus_one = number - Integer::from(1);
@@ -100,5 +109,40 @@ mod tests {
 
         let high = (low + 1e7 as u32).complete();
         let _ = miller_rabin_impl(low, &high);
+    }
+
+    #[test]
+    fn test_valid_range() {
+        let low = Integer::from(2);
+        let high = Integer::from(10);
+        let result = miller_rabin_impl(&low, &high);
+
+        assert_eq!(result.len(), 9);
+    }
+
+    #[test]
+    fn test_single_prime() {
+        let low = Integer::from(7);
+        let high = Integer::from(7);
+        let result = miller_rabin_impl(&low, &high);
+
+        assert_eq!(result, vec![true]);
+    }
+
+    #[test]
+    fn test_few_bigger_primes() {
+        let low = Integer::from(1000000007);
+        let high = Integer::from(1000000010);
+        let result = miller_rabin_impl(&low, &high);
+        assert_eq!(result, vec![true, false, true, false]);
+    }
+
+    #[test]
+    fn test_single_composite() {
+        let low = Integer::from(8);
+        let high = Integer::from(8);
+        let result = miller_rabin_impl(&low, &high);
+
+        assert_eq!(result, vec![false]);
     }
 }
