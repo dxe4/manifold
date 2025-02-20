@@ -1,11 +1,12 @@
-extern crate rug;
 extern crate rayon;
+extern crate rug;
 
-use rug::Integer;
-use rug::ops::Pow;
-use rayon::prelude::*;
-use super::threading::get_large_pool;
 use super::num_utils::pow_large;
+use super::threading::get_large_pool;
+use rayon::prelude::*;
+use rug::ops::Pow;
+use rug::{Complete, Integer, Rational};
+use std::ops::{Add, Mul, Sub};
 
 use std::default::Default;
 
@@ -30,8 +31,6 @@ impl Default for NumberConfig {
     }
 }
 
-
-
 pub fn x_pow_y_pow_z_mod_k(number_config: NumberConfig) -> Vec<String> {
     /*
         x = 10^n
@@ -42,20 +41,86 @@ pub fn x_pow_y_pow_z_mod_k(number_config: NumberConfig) -> Vec<String> {
     let mut results = vec![String::new(); (number_config.end - number_config.start + 1) as usize];
 
     pool.install(|| {
-        results
-            .par_iter_mut()
-            .enumerate()
-            .for_each(|(i, result)| {
-                let n = number_config.start + i;
+        results.par_iter_mut().enumerate().for_each(|(i, result)| {
+            let n = number_config.start + i;
 
-                let modulus = Integer::from(number_config.exponent).pow(number_config.digit_limit);
-                let exponent = pow_large(&Integer::from(number_config.exponent), &Integer::from(n));
+            let modulus = Integer::from(number_config.exponent).pow(number_config.digit_limit);
+            let exponent = pow_large(&Integer::from(number_config.exponent), &Integer::from(n));
 
-                // Calculate 2^(10^n) mod 10^DIGIT_LIMIT
-                let res = Integer::from(number_config.base).pow_mod(&exponent, &modulus).unwrap();
-                *result = res.to_string();
-            });
+            // Calculate 2^(10^n) mod 10^DIGIT_LIMIT
+            let res = Integer::from(number_config.base)
+                .pow_mod(&exponent, &modulus)
+                .unwrap();
+            *result = res.to_string();
+        });
     });
 
     results
+}
+
+#[derive(Debug, Clone)]
+struct TwoAdicInteger {
+    /*
+     TODO
+     the adic package is quite good
+     we should use that eventually
+     for now we only need valuation and distance so its fine
+     https://lib.rs/crates/adic
+    */
+    value: Integer,
+}
+
+impl TwoAdicInteger {
+    pub fn new(value: Integer) -> Self {
+        Self { value }
+    }
+
+    pub fn valuation(&self) -> u32 {
+        let abs_self = self.value.clone().abs();
+        let significant_bits = abs_self.significant_bits();
+
+        for i in 0..significant_bits {
+            if abs_self.get_bit(i) {
+                return i;
+            }
+        }
+        return significant_bits;
+    }
+
+    pub fn distance(&self, other: &Self) -> Rational {
+        let diff = (&self.value - &other.value).complete();
+        let valuation = TwoAdicInteger::new(diff).valuation();
+        let denominator = Integer::from(1) << valuation;
+        return Rational::from((1, denominator));
+    }
+}
+
+impl Add for TwoAdicInteger {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            value: self.value + other.value,
+        }
+    }
+}
+
+impl Mul for TwoAdicInteger {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        Self {
+            value: self.value * other.value,
+        }
+    }
+}
+
+impl Sub for TwoAdicInteger {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            value: self.value - other.value,
+        }
+    }
 }
