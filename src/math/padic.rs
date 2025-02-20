@@ -124,3 +124,27 @@ impl Sub for TwoAdicInteger {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rug::{Integer, Rational};
+
+    #[test]
+    fn test_valuation() {
+        assert_eq!(TwoAdicInteger::new(Integer::from(8)).valuation(), 3);
+        assert_eq!(TwoAdicInteger::new(Integer::from(12)).valuation(), 2);
+        assert_eq!(TwoAdicInteger::new(Integer::from(1)).valuation(), 0);
+        assert_eq!(TwoAdicInteger::new(Integer::from(0)).valuation(), 0);
+        assert_eq!(TwoAdicInteger::new(Integer::from(7)).valuation(), 0);
+    }
+
+    #[test]
+    fn test_distance() {
+        let a = TwoAdicInteger::new(Integer::from(8));
+        let b = TwoAdicInteger::new(Integer::from(12));
+        let expected_distance = Rational::from((1, Integer::from(4)));
+
+        assert_eq!(a.distance(&b), expected_distance);
+    }
+}
