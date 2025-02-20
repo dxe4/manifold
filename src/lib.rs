@@ -5,6 +5,7 @@ use rug::Integer;
 use std::str::FromStr;
 
 mod math;
+use math::collatz::{collatz_sequence_impl, Collatz};
 use math::fib_calc::fib_matrix;
 use math::inneficient::sum_of_factors_from_pentagonal_numbers;
 use math::padic::{x_pow_y_pow_z_mod_k, NumberConfig};
@@ -37,6 +38,12 @@ fn miller_rabin_bool(a: &PyAny) -> PyResult<Py<PyBool>> {
 
     let result = miller_rabin_impl(&num_a, &num_a);
     Python::with_gil(|py| Ok(PyBool::new(py, result[0]).into_py(py)))
+}
+
+#[pyfunction]
+fn collatz_sequence(a: &PyAny) -> Collatz {
+    let num_a = to_rug_integer(a).unwrap();
+    collatz_sequence_impl(num_a)
 }
 
 #[pyfunction]
@@ -87,5 +94,7 @@ fn manifold_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(add_numbers, m)?)?;
     m.add_function(wrap_pyfunction!(miller_rabin_bool_multiple, m)?)?;
     m.add_function(wrap_pyfunction!(power_of_two_exponent_10n_py, m)?)?;
+    m.add_function(wrap_pyfunction!(collatz_sequence, m)?)?;
+    m.add_class::<Collatz>()?;
     Ok(())
 }

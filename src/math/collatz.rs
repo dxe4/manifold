@@ -1,27 +1,52 @@
 use super::padic::TwoAdicInteger;
+use pyo3::prelude::*;
 use rug::{Integer, Rational};
 
 #[derive(Debug, Clone)]
-struct Collatz {
-    n: Integer,
-    seq: Vec<Integer>,
-    two_adic_distance: Vec<Rational>,
+#[pyclass]
+pub struct Collatz {
+    pub n: Integer,
+    pub seq: Vec<Integer>,
+    pub two_adic_distance: Vec<Rational>,
 }
 
+#[pymethods]
 impl Collatz {
+    pub fn get_seq_str(&self) -> Vec<String> {
+        self.seq
+            .iter()
+            .map(|item| item.to_string())
+            .collect::<Vec<String>>()
+    }
+
     pub fn two_adic_disntace_str(&self) -> Vec<String> {
         /*
          we need the internal representation to be rationals and not reals
-         for calculation purposes
         */
         self.two_adic_distance
             .iter()
             .map(|item| format!("{}/{}", item.numer(), item.denom()))
             .collect::<Vec<String>>()
     }
+
+    pub fn seq_str(&self) -> Vec<String> {
+        self.seq
+            .iter()
+            .map(|item| item.to_string())
+            .collect::<Vec<String>>()
+    }
+    pub fn total_distance(&self) -> String {
+        let sum: Integer = self.seq.iter().sum();
+        return sum.to_string();
+    }
+
+    pub fn total_2adic_distance(&self) -> String {
+        let sum: Rational = self.two_adic_distance.iter().sum();
+        return format!("{}/{}", sum.numer(), sum.denom());
+    }
 }
 
-fn collatz_sequence(n: Integer) -> Collatz {
+pub fn collatz_sequence_impl(n: Integer) -> Collatz {
     let mut sequence = vec![n.clone()];
     let mut two_adic_distance: Vec<Rational> = Vec::new();
 
@@ -57,18 +82,21 @@ mod tests {
 
     #[test]
     fn test_collatz_sequence_1() {
-        assert_eq!(collatz_sequence(Integer::from(1)).seq, rug_int_vec![1]);
+        assert_eq!(collatz_sequence_impl(Integer::from(1)).seq, rug_int_vec![1]);
     }
 
     #[test]
     fn test_collatz_sequence_2() {
-        assert_eq!(collatz_sequence(Integer::from(2)).seq, rug_int_vec![2, 1]);
+        assert_eq!(
+            collatz_sequence_impl(Integer::from(2)).seq,
+            rug_int_vec![2, 1]
+        );
     }
 
     #[test]
     fn test_collatz_sequence_3() {
         assert_eq!(
-            collatz_sequence(Integer::from(3)).seq,
+            collatz_sequence_impl(Integer::from(3)).seq,
             rug_int_vec![3, 10, 5, 16, 8, 4, 2, 1]
         );
     }
@@ -76,7 +104,7 @@ mod tests {
     #[test]
     fn test_collatz_sequence_6() {
         assert_eq!(
-            collatz_sequence(Integer::from(6)).seq,
+            collatz_sequence_impl(Integer::from(6)).seq,
             rug_int_vec![6, 3, 10, 5, 16, 8, 4, 2, 1]
         );
     }
@@ -84,7 +112,7 @@ mod tests {
     #[test]
     fn test_collatz_sequence_27() {
         assert_eq!(
-            collatz_sequence(Integer::from(27)).seq,
+            collatz_sequence_impl(Integer::from(27)).seq,
             rug_int_vec![
                 27, 82, 41, 124, 62, 31, 94, 47, 142, 71, 214, 107, 322, 161, 484, 242, 121, 364,
                 182, 91, 274, 137, 412, 206, 103, 310, 155, 466, 233, 700, 350, 175, 526, 263, 790,

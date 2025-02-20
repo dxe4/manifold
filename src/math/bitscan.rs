@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use rug::{Complete, Integer};
+use rug::Integer;
 
 fn create_small_trailing() -> [u32; 256] {
     let mut small_trailing = [0u32; 256];
