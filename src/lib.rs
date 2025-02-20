@@ -5,11 +5,10 @@ use rug::Integer;
 use std::str::FromStr;
 
 mod math;
-use math::inneficient::sum_of_factors_from_pentagonal_numbers;
-use math::primes::miller_rabin_impl;
-use math::padic::{x_pow_y_pow_z_mod_k, NumberConfig};
 use math::fib_calc::fib_matrix;
-
+use math::inneficient::sum_of_factors_from_pentagonal_numbers;
+use math::padic::{x_pow_y_pow_z_mod_k, NumberConfig};
+use math::primes::miller_rabin_impl;
 
 fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
     let str_val = obj.str()?.to_string();
@@ -71,7 +70,6 @@ fn add_numbers(a: &PyAny, b: &PyAny) -> PyResult<PyObject> {
         }
     })
 }
-
 
 #[pyfunction]
 fn power_of_two_exponent_10n_py(start: usize, end: usize) -> PyResult<Vec<String>> {

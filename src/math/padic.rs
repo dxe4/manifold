@@ -59,7 +59,7 @@ pub fn x_pow_y_pow_z_mod_k(number_config: NumberConfig) -> Vec<String> {
 }
 
 #[derive(Debug, Clone)]
-struct TwoAdicInteger {
+pub struct TwoAdicInteger {
     /*
      TODO
      the adic package is quite good
@@ -67,7 +67,7 @@ struct TwoAdicInteger {
      for now we only need valuation and distance so its fine
      https://lib.rs/crates/adic
     */
-    value: Integer,
+    pub value: Integer,
 }
 
 impl TwoAdicInteger {
