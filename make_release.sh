@@ -1,19 +1,21 @@
 set -e
 
+read -p "Do you want to bump the version? (Y/n): " RESPONSE
+RESPONSE=${RESPONSE:-Y}
+
+if [[ "$RESPONSE" =~ ^[Yy]$ ]]; then
+    echo "Bumping version..."
+    uv run python bump_rust_version.py
+fi
+
 VERSION=$(grep '^version =' Cargo.toml | head -1 | cut -d '"' -f2)
 TAG="v$VERSION"
 
 echo "Releasing version: v$VERSION"
-read -p "Continue? (y/n): " CONFIRM
-if [[ "$CONFIRM" != "y" ]]; then
-    echo "Release cancelled."
-    exit 1
-fi
 
 if git rev-parse "$TAG" >/dev/null 2>&1; then
     echo "Tag $TAG already exists, skipping tagging."
 else
-    # Create Git tag
     echo "Creating new Git tag: $TAG"
     git tag -a "$TAG" -m "Release version $VERSION"
     git push origin "$TAG"
