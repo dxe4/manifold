@@ -5,6 +5,7 @@ use rug::Integer;
 use std::str::FromStr;
 
 mod math;
+use math::chineese_remainder_theorem::chinese_remainder_theorem_impl;
 use math::collatz::{collatz_sequence_impl, Collatz};
 use math::fib_calc::fib_matrix;
 use math::inneficient::sum_of_factors_from_pentagonal_numbers;
@@ -56,12 +57,27 @@ fn power_of_two_exponent_10n_py(start: usize, end: usize) -> PyResult<Vec<String
     Ok(x_pow_y_pow_z_mod_k(config))
 }
 
+#[pyfunction]
+fn chinese_remainder_theorem_py(a_list: Vec<&PyAny>, n_list: Vec<&PyAny>) -> PyResult<String> {
+    let a_integers: Result<Vec<Integer>, _> = a_list.iter().map(|x| to_rug_integer(x)).collect();
+    let n_integers: Result<Vec<Integer>, _> = n_list.iter().map(|x| to_rug_integer(x)).collect();
+
+    let a_integers = a_integers?;
+    let n_integers = n_integers?;
+
+    match chinese_remainder_theorem_impl(&a_integers, &n_integers) {
+        Ok(result) => Ok(result.to_string()),
+        Err(e) => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(e)),
+    }
+}
+
 #[pymodule]
 fn manifold_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(miller_rabin_bool, m)?)?;
     m.add_function(wrap_pyfunction!(miller_rabin_bool_multiple, m)?)?;
     m.add_function(wrap_pyfunction!(power_of_two_exponent_10n_py, m)?)?;
     m.add_function(wrap_pyfunction!(collatz_sequence, m)?)?;
+    m.add_function(wrap_pyfunction!(chinese_remainder_theorem_py, m)?)?;
     m.add_class::<Collatz>()?;
     Ok(())
 }

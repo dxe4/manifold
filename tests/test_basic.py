@@ -3,6 +3,7 @@ from manifold_rs import (
     miller_rabin_bool,
     miller_rabin_bool_multiple,
     power_of_two_exponent_10n_py,
+    chinese_remainder_theorem_py,
 )
 
 
@@ -38,3 +39,10 @@ def test_power_of_two_exponent_10n_py():
         res[-1]
         == "7228380315618644500754615641066207634474587451600209197559409389648307032691781901149685493801300001392571910673782855101147912247921594402023866545696046992680891830197061490109937833490419136188999442576576769103890995893380022607743740081787109376"
     )
+
+
+def test_chinese_remainder_theorem_py():
+    res = chinese_remainder_theorem_py(
+        [2,3,2], [3,5,7]
+    )
+    assert res == "23"

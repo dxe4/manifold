@@ -1,4 +1,6 @@
 from typing import List, Any
+from typing import List, Union
+Number = Union[int, str]
 
 class Collatz:
     n: int
@@ -17,3 +19,9 @@ def miller_rabin_bool_multiple(a: Any, b: Any) -> List[bool]: ...
 def miller_rabin_bool(a: Any) -> bool: ...
 def collatz_sequence(a: Any) -> Collatz: ...
 def power_of_two_exponent_10n_py(start: int, end: int) -> List[str]: ...
+
+
+def chinese_remainder_theorem_py(
+    a_list: List[Number],
+    n_list: List[Number]
+) -> str: ...

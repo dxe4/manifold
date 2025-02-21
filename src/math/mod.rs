@@ -1,4 +1,5 @@
 pub mod bitscan;
+pub mod chineese_remainder_theorem;
 pub mod collatz;
 pub mod fib_calc;
 pub mod inneficient;
