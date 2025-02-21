@@ -3,8 +3,21 @@ use rug::{Complete, Integer};
 use std::str::FromStr;
 
 use super::bitscan::bit_scan1;
+use super::common::{contains_zero_in_binary, trailing_zeros};
 use super::miller_rabin_bases::get_miller_rabin_bases;
 use super::threading::get_large_pool;
+
+pub fn is_mersenne(num: &Integer) -> bool {
+    /*
+    2^n -> 10000000
+    2^n -1 -> 11111111
+    so this can be detected from bitwise shifts only
+    this assumes prime was passed in
+    dangerous assumption
+    change later on to take Prime instead of Integer
+    */
+    !contains_zero_in_binary(num)
+}
 
 fn _miller_rabin_test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
     let mut b = Integer::from(base.pow_mod_ref(t, n).unwrap());
@@ -139,5 +152,14 @@ mod tests {
         let result = miller_rabin_impl(&low, &high);
 
         assert_eq!(result, vec![false]);
+    }
+    #[test]
+    fn test_mersennse() {
+        assert_eq!(is_mersenne(&Integer::from(3)), true);
+        assert_eq!(is_mersenne(&Integer::from(7)), true);
+        assert_eq!(is_mersenne(&Integer::from(11)), false);
+        assert_eq!(is_mersenne(&Integer::from(17)), false);
+        assert_eq!(is_mersenne(&Integer::from(31)), true);
+        assert_eq!(is_mersenne(&Integer::from(8191)), true);
     }
 }

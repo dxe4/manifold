@@ -1,5 +1,16 @@
 use rug::{Complete, Integer};
 
+pub fn contains_zero_in_binary(n: &Integer) -> bool {
+    let significant_bits = n.significant_bits();
+
+    for i in 0..significant_bits {
+        if !n.get_bit(i) {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn trailing_zeros(n: &Integer) -> u32 {
     /*
      TODO this logic is used in multiple places
