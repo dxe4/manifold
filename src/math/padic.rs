@@ -147,4 +147,28 @@ mod tests {
 
         assert_eq!(a.distance(&b), expected_distance);
     }
+
+    #[test]
+    fn test_distance_2() {
+        let a = TwoAdicInteger::new(Integer::from(3));
+        let b = TwoAdicInteger::new(Integer::from(5));
+        let expected_distance = Rational::from((1, Integer::from(2)));
+        assert_eq!(a.distance(&b), expected_distance);
+    }
+
+    #[test]
+    fn test_distance_3() {
+        let a = TwoAdicInteger::new(Integer::from(16));
+        let b = TwoAdicInteger::new(Integer::from(4));
+        let expected_distance = Rational::from((1, Integer::from(4)));
+        assert_eq!(a.distance(&b), expected_distance);
+    }
+
+    #[test]
+    fn test_distance_abs() {
+        let a = TwoAdicInteger::new(Integer::from(27));
+        let b = TwoAdicInteger::new(Integer::from(81));
+
+        assert_eq!(a.distance(&b), b.distance(&a));
+    }
 }
