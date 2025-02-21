@@ -1,6 +1,6 @@
 [package]
 name = "manifold_rs"
-version = "0.1.55"
+version = "0.1.56"
 edition = "2021"
 
 [lib]
@@ -17,3 +17,6 @@ rug = "1.26.1"
 [dependencies.pyo3]
 version = "0.20.0"
 features = [ "extension-module",]
+
+[package.metadata.maturin]
+include = [ "src/manifold_rs.pyi", "py.typed",]
