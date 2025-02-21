@@ -1,4 +1,4 @@
-use rug::{Assign, Complete, Integer};
+use rug::{Complete, Integer};
 
 fn multiply_matrices(a: [[Integer; 2]; 2], b: [[Integer; 2]; 2]) -> [[Integer; 2]; 2] {
     [

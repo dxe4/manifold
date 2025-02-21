@@ -1,10 +1,5 @@
-use lazy_static::lazy_static;
-use num_cpus;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-use rayon::ThreadPoolBuilder;
 use rug::{Complete, Integer};
-use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
 use std::str::FromStr;
 
 use super::bitscan::bit_scan1;
