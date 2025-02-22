@@ -1,4 +1,4 @@
-use rug::{integer::IntegerExt64, Complete, Integer};
+use rug::{integer::IntegerExt64, ops::Pow, Complete, Integer};
 
 use super::{
     num_utils::pow_large,
@@ -124,18 +124,25 @@ pub fn is_mersenne_prime(num: &Integer) -> bool {
 }
 
 fn sieve(limit: usize) -> Vec<Integer> {
-    let mut is_prime = vec![true; limit + 1];
-    let mut primes = Vec::new();
-    for i in 2..=limit {
-        if is_prime[i] {
+    let mut is_prime = vec![true; (limit + 1) >> 1];
+    let mut primes = vec![Integer::from(2)];
+
+    let sqrt_limit = (limit as f64).sqrt() as usize;
+    for i in (3..=limit).step_by(2) {
+        if i > sqrt_limit && is_prime[i >> 1] {
+            primes.push(Integer::from(i));
+            continue;
+        }
+        if is_prime[i >> 1] {
             primes.push(Integer::from(i));
             let mut multiple = i * i;
             while multiple <= limit {
-                is_prime[multiple] = false;
-                multiple += i;
+                is_prime[multiple >> 1] = false;
+                multiple += i * 2;
             }
         }
     }
+
     primes
 }
 
