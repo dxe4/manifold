@@ -123,8 +123,56 @@ pub fn is_mersenne_prime(num: &Integer) -> bool {
     return lucas_lehmer_q(&q);
 }
 
+fn sieve(limit: usize) -> Vec<Integer> {
+    let mut is_prime = vec![true; limit + 1];
+    let mut primes = Vec::new();
+    for i in 2..=limit {
+        if is_prime[i] {
+            primes.push(Integer::from(i));
+            let mut multiple = i * i;
+            while multiple <= limit {
+                is_prime[multiple] = false;
+                multiple += i;
+            }
+        }
+    }
+    primes
+}
+
+pub fn mobius(n: &Integer) -> i32 {
+    if n == &Integer::from(1) {
+        return 1;
+    }
+    let n_u32 = n.to_u32();
+    let primes = sieve(n_u32.unwrap() as usize);
+    let mut n = n.clone();
+    let mut count = 0;
+    for prime in primes {
+        if &(&prime * &prime).complete() > &n {
+            break;
+        }
+        if n.is_divisible(&prime) {
+            n = n / &prime;
+            if n.is_divisible(&prime) {
+                return 0;
+            }
+            count += 1;
+        }
+    }
+    if n > 1 {
+        count += 1;
+    }
+    if count % 2 == 0 {
+        1
+    } else {
+        -1
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::rug_int_vec;
+
     use super::*;
     #[test]
     fn test_lucas_lehmer_primes() {
@@ -208,5 +256,23 @@ mod tests {
         assert!(is_mersenne_prime(&Integer::from(31)));
         assert!(is_mersenne_prime(&Integer::from(127)));
         assert!(is_mersenne_prime(&Integer::from(8191)));
+    }
+    #[test]
+    fn test_mobius() {
+        assert_eq!(mobius(&Integer::from(1)), 1);
+        assert_eq!(mobius(&Integer::from(2)), -1);
+        assert_eq!(mobius(&Integer::from(3)), -1);
+        assert_eq!(mobius(&Integer::from(4)), 0);
+        assert_eq!(mobius(&Integer::from(5)), -1);
+        assert_eq!(mobius(&Integer::from(6)), 1);
+        assert_eq!(mobius(&Integer::from(10)), 1);
+        assert_eq!(mobius(&Integer::from(12)), 0);
+        assert_eq!(mobius(&Integer::from(30)), -1);
+    }
+    #[test]
+    fn test_sieve_limit_10() {
+        let expected = rug_int_vec![2, 3, 5, 7];
+        let res = sieve(10);
+        assert_eq!(res, expected);
     }
 }
