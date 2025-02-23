@@ -1,4 +1,7 @@
-use rug::{integer::IntegerExt64, ops::Pow, Complete, Integer};
+use std::collections::HashSet;
+
+use super::traits::IntegerGenerator;
+use rug::{ops::Pow, Complete, Integer};
 
 use super::{
     num_utils::pow_large,
@@ -146,6 +149,20 @@ fn sieve(limit: usize) -> Vec<Integer> {
     primes
 }
 
+fn quadratic_residues(p: &Integer) -> Vec<Integer> {
+    let mut residues = HashSet::new();
+
+    let half_p = p.clone() / Integer::from(2) + Integer::from(1);
+
+    for current in half_p.range_to() {
+        let residue = current.pow_mod(&Integer::from(2), p).unwrap();
+        residues.insert(residue);
+    }
+    let mut residues_vec: Vec<Integer> = residues.into_iter().collect();
+    residues_vec.sort();
+    residues_vec
+}
+
 pub fn mobius(n: &Integer) -> i32 {
     if n == &Integer::from(1) {
         return 1;
@@ -281,5 +298,12 @@ mod tests {
         let expected = rug_int_vec![2, 3, 5, 7];
         let res = sieve(10);
         assert_eq!(res, expected);
+    }
+
+    #[test]
+    fn test_quadradic_residue() {
+        let residues = quadratic_residues(&Integer::from(7));
+        let epxected = rug_int_vec![0, 1, 2, 4];
+        assert_eq!(residues, epxected);
     }
 }
