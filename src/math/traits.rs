@@ -1,6 +1,6 @@
-use rug::Integer;
+use rug::{Complete, Integer};
 
-struct IntegerIterator {
+pub struct IntegerIterator {
     current: Integer,
     end: Integer,
     inclusive: bool,
@@ -35,7 +35,7 @@ impl Iterator for IntegerIterator {
     }
 }
 
-trait IntegerGenerator {
+pub trait IntegerGenerator {
     fn range_to(self) -> IntegerIterator;
     fn range_to_inclusive(self) -> IntegerIterator;
 }
