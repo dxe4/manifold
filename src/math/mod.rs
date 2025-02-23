@@ -10,3 +10,4 @@ pub mod num_utils;
 pub mod padic;
 pub mod primes;
 pub mod threading;
+pub mod traits;
