@@ -3,10 +3,7 @@ use std::collections::HashSet;
 use super::{primes::sieve, traits::IntegerGenerator};
 use rug::{ops::Pow, Complete, Integer};
 
-use super::{
-    num_utils::pow_large,
-    primes::{is_mersenne_number, miller_rabin_single},
-};
+use super::{num_utils::pow_large, primes::miller_rabin_single};
 
 pub fn is_power_of_2(n: &Integer) -> bool {
     let significant_bits = n.significant_bits() - 1;
@@ -19,20 +16,20 @@ pub fn is_power_of_2(n: &Integer) -> bool {
     true
 }
 
-pub fn contains_zero_in_binary(n: &Integer) -> bool {
+pub fn is_mersenne_number(n: &Integer) -> bool {
     /*
-     TODO
-     shall we rename this to is_mersenne number?
-     anme is misleading
+    2^n -> 10000000
+    2^n -1 -> 11111111
+    so this can be detected from bitwise shifts only
     */
-    let significant_bits = n.significant_bits();
+    let significant_bits = n.significant_bits() - 1;
 
-    for i in 0..significant_bits - 1 {
+    for i in 0..significant_bits {
         if !n.get_bit(i) {
-            return true;
+            return false;
         }
     }
-    false
+    true
 }
 
 pub fn trailing_zeros(n: &Integer) -> u32 {
@@ -40,7 +37,7 @@ pub fn trailing_zeros(n: &Integer) -> u32 {
      TODO this logic is used in multiple places
      make one central function and use that
     */
-    let significant_bits = n.significant_bits();
+    let significant_bits = n.significant_bits() - 1;
 
     for i in 0..significant_bits {
         if n.get_bit(i) {
@@ -212,15 +209,15 @@ mod tests {
 
     #[test]
     fn test_power_of_2() {
-        assert!(is_power_of_2(&Integer::from(2)));
-        assert!(is_power_of_2(&Integer::from(4)));
-        assert!(is_power_of_2(&Integer::from(8)));
-        assert!(is_power_of_2(&Integer::from(16)));
-        assert!(is_power_of_2(&Integer::from(32)));
-        assert!(is_power_of_2(&Integer::from(64)));
-        assert!(is_power_of_2(&Integer::from(128)));
-        assert!(is_power_of_2(&Integer::from(256)));
-        assert!(is_power_of_2(&Integer::from(512)));
+        assert_eq!(true, is_power_of_2(&Integer::from(2)));
+        assert_eq!(true, is_power_of_2(&Integer::from(4)));
+        assert_eq!(true, is_power_of_2(&Integer::from(8)));
+        assert_eq!(true, is_power_of_2(&Integer::from(16)));
+        assert_eq!(true, is_power_of_2(&Integer::from(32)));
+        assert_eq!(true, is_power_of_2(&Integer::from(64)));
+        assert_eq!(true, is_power_of_2(&Integer::from(128)));
+        assert_eq!(true, is_power_of_2(&Integer::from(256)));
+        assert_eq!(true, is_power_of_2(&Integer::from(512)));
     }
 
     #[test]
@@ -263,13 +260,43 @@ mod tests {
     }
 
     #[test]
-    fn test_contains_zero_in_binary() {
-        assert_eq!(contains_zero_in_binary(&Integer::from(8)), true);
-        assert_eq!(contains_zero_in_binary(&Integer::from(16)), true);
-        assert_eq!(contains_zero_in_binary(&Integer::from(32)), true);
+    fn test_mersennse() {
+        assert_eq!(is_mersenne_number(&Integer::from(3)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(7)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(11)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(17)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(31)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(8191)), true);
 
-        assert_eq!(contains_zero_in_binary(&Integer::from(8 - 1)), false);
-        assert_eq!(contains_zero_in_binary(&Integer::from(16 - 1)), false);
-        assert_eq!(contains_zero_in_binary(&Integer::from(32 - 1)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(8)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(16)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(32)), false);
+
+        assert_eq!(is_mersenne_number(&Integer::from(8 - 1)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(16 - 1)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(32 - 1)), true);
+
+        // this check for 110000
+        assert_eq!(is_mersenne_number(&Integer::from(8 + (8 >> 1))), false);
+        assert_eq!(is_mersenne_number(&Integer::from(16 + (16 >> 1))), false);
+        assert_eq!(is_mersenne_number(&Integer::from(32 + (32 >> 1))), false);
+
+        assert_eq!(is_mersenne_number(&Integer::from(8 + (8 >> 2))), false);
+        assert_eq!(is_mersenne_number(&Integer::from(8 + (8 >> 3))), false);
+    }
+
+    #[test]
+    fn test_is_power_of_w() {
+        assert_eq!(is_power_of_2(&Integer::from(8)), true);
+        assert_eq!(is_power_of_2(&Integer::from(16)), true);
+        assert_eq!(is_power_of_2(&Integer::from(32)), true);
+
+        assert_eq!(is_power_of_2(&Integer::from(8 - 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(16 - 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(32 - 1)), false);
+
+        assert_eq!(is_power_of_2(&Integer::from(8 + 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(16 + 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(32 + 1)), false);
     }
 }
