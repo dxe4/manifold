@@ -20,9 +20,14 @@ pub fn is_power_of_2(n: &Integer) -> bool {
 }
 
 pub fn contains_zero_in_binary(n: &Integer) -> bool {
+    /*
+     TODO
+     shall we rename this to is_mersenne number?
+     anme is misleading
+    */
     let significant_bits = n.significant_bits();
 
-    for i in 0..significant_bits {
+    for i in 0..significant_bits - 1 {
         if !n.get_bit(i) {
             return true;
         }
@@ -255,5 +260,16 @@ mod tests {
         let residues = quadratic_residues(&Integer::from(7));
         let epxected = rug_int_vec![0, 1, 2, 4];
         assert_eq!(residues, epxected);
+    }
+
+    #[test]
+    fn test_contains_zero_in_binary() {
+        assert_eq!(contains_zero_in_binary(&Integer::from(8)), true);
+        assert_eq!(contains_zero_in_binary(&Integer::from(16)), true);
+        assert_eq!(contains_zero_in_binary(&Integer::from(32)), true);
+
+        assert_eq!(contains_zero_in_binary(&Integer::from(8 - 1)), false);
+        assert_eq!(contains_zero_in_binary(&Integer::from(16 - 1)), false);
+        assert_eq!(contains_zero_in_binary(&Integer::from(32 - 1)), false);
     }
 }
