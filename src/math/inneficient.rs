@@ -12,7 +12,7 @@ lazy_static! {
 }
 
 pub fn pentagonal_number_index(i: &Integer) -> (Integer, Integer) {
-    // f(n) n(3n - 1) / 1, n = -1/+1
+    // f(n) n(3n - 1) / 2, n = -1/+1
     (
         ((i * (THREE.clone() * i + ONE.clone())) / TWO.clone()) - ONE.clone(),
         ((i * (THREE.clone() * i - ONE.clone())) / TWO.clone()) - ONE.clone(),
