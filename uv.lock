@@ -101,7 +101,7 @@ wheels = [
 
 [[package]]
 name = "manifold"
-version = "0.1.58"
+version = "0.1.59"
 source = { editable = "." }
 dependencies = [
     { name = "maturin" },
