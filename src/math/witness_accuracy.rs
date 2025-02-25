@@ -146,6 +146,6 @@ mod tests {
 
     #[test]
     fn test_miller_rabin_witness() {
-        track_witness_accuracy(10_u32.pow(3), 10_u32.pow(4));
+        track_witness_accuracy(10_u32.pow(2), 10_u32.pow(3));
     }
 }

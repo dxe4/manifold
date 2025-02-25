@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use super::traits::IntegerGenerator;
+use super::{primes::sieve, traits::IntegerGenerator};
 use rug::{ops::Pow, Complete, Integer};
 
 use super::{
@@ -86,7 +86,7 @@ pub fn is_coprime(a: Integer, b: Integer) -> bool {
     return binary_gcd(a.clone(), b.clone()) == 1;
 }
 
-fn lucas_lehmer_q(prime_q: &Integer) -> bool {
+pub fn lucas_lehmer_q(prime_q: &Integer) -> bool {
     if prime_q < &2 {
         return false;
     }
@@ -106,50 +106,7 @@ fn lucas_lehmer_q(prime_q: &Integer) -> bool {
     s.is_zero()
 }
 
-pub fn is_mersenne_prime(num: &Integer) -> bool {
-    /*
-    TODO Is this the best way of testing?
-    for now its implemented since lucas_lehmer_q was there
-    may have to re-visit
-    */
-    if !is_mersenne_number(num) {
-        return false;
-    }
-    if !is_power_of_2(&(num + Integer::from(1))) {
-        return false;
-    }
-    let significant_bits = num.significant_bits();
-    let q = Integer::from(significant_bits);
-    if !miller_rabin_single(&q) {
-        return false;
-    }
-    return lucas_lehmer_q(&q);
-}
-
-fn sieve(limit: usize) -> Vec<Integer> {
-    let mut is_prime = vec![true; (limit + 1) >> 1];
-    let mut primes = vec![Integer::from(2)];
-
-    let sqrt_limit = (limit as f64).sqrt() as usize;
-    for i in (3..=limit).step_by(2) {
-        if i > sqrt_limit && is_prime[i >> 1] {
-            primes.push(Integer::from(i));
-            continue;
-        }
-        if is_prime[i >> 1] {
-            primes.push(Integer::from(i));
-            let mut multiple = i * i;
-            while multiple <= limit {
-                is_prime[multiple >> 1] = false;
-                multiple += i * 2;
-            }
-        }
-    }
-
-    primes
-}
-
-fn quadratic_residues(p: &Integer) -> Vec<Integer> {
+pub fn quadratic_residues(p: &Integer) -> Vec<Integer> {
     let mut residues = HashSet::new();
 
     let half_p = p.clone() / Integer::from(2) + Integer::from(1);
@@ -274,13 +231,6 @@ mod tests {
         assert_eq!(trailing_zeros(&Integer::from(512)), Integer::from(9));
     }
 
-    #[test]
-    fn test_is_mersenne_prime() {
-        assert!(is_mersenne_prime(&Integer::from(7)));
-        assert!(is_mersenne_prime(&Integer::from(31)));
-        assert!(is_mersenne_prime(&Integer::from(127)));
-        assert!(is_mersenne_prime(&Integer::from(8191)));
-    }
     #[test]
     fn test_mobius() {
         assert_eq!(mobius(&Integer::from(1)), 1);

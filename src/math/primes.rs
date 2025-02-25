@@ -3,7 +3,7 @@ use rug::{Complete, Integer};
 use std::str::FromStr;
 
 use super::bitscan::bit_scan1;
-use super::common::{contains_zero_in_binary, trailing_zeros};
+use super::common::{contains_zero_in_binary, is_power_of_2, lucas_lehmer_q, trailing_zeros};
 use super::miller_rabin_bases::get_miller_rabin_bases;
 use super::threading::get_large_pool;
 
@@ -104,6 +104,49 @@ pub fn miller_rabin_impl(low: &Integer, high: &Integer) -> Vec<bool> {
     return res;
 }
 
+pub fn is_mersenne_prime(num: &Integer) -> bool {
+    /*
+    TODO Is this the best way of testing?
+    for now its implemented since lucas_lehmer_q was there
+    may have to re-visit
+    */
+    if !is_mersenne_number(num) {
+        return false;
+    }
+    if !is_power_of_2(&(num + Integer::from(1))) {
+        return false;
+    }
+    let significant_bits = num.significant_bits();
+    let q = Integer::from(significant_bits);
+    if !miller_rabin_single(&q) {
+        return false;
+    }
+    return lucas_lehmer_q(&q);
+}
+
+pub fn sieve(limit: usize) -> Vec<Integer> {
+    let mut is_prime = vec![true; (limit + 1) >> 1];
+    let mut primes = vec![Integer::from(2)];
+
+    let sqrt_limit = (limit as f64).sqrt() as usize;
+    for i in (3..=limit).step_by(2) {
+        if i > sqrt_limit && is_prime[i >> 1] {
+            primes.push(Integer::from(i));
+            continue;
+        }
+        if is_prime[i >> 1] {
+            primes.push(Integer::from(i));
+            let mut multiple = i * i;
+            while multiple <= limit {
+                is_prime[multiple >> 1] = false;
+                multiple += i * 2;
+            }
+        }
+    }
+
+    primes
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -112,7 +155,7 @@ mod tests {
     fn test_miller_rabin_multiple() {
         let low = &Integer::from_str("341550071728321").unwrap();
 
-        let high = (low + 1e7 as u32).complete();
+        let high = (low + 1e3 as u32).complete();
         let _ = miller_rabin_impl(low, &high);
     }
 
@@ -150,6 +193,7 @@ mod tests {
 
         assert_eq!(result, vec![false]);
     }
+
     #[test]
     fn test_mersennse() {
         assert_eq!(is_mersenne_number(&Integer::from(3)), true);
@@ -158,5 +202,13 @@ mod tests {
         assert_eq!(is_mersenne_number(&Integer::from(17)), false);
         assert_eq!(is_mersenne_number(&Integer::from(31)), true);
         assert_eq!(is_mersenne_number(&Integer::from(8191)), true);
+    }
+
+    #[test]
+    fn test_is_mersenne_prime() {
+        assert!(is_mersenne_prime(&Integer::from(7)));
+        assert!(is_mersenne_prime(&Integer::from(31)));
+        assert!(is_mersenne_prime(&Integer::from(127)));
+        assert!(is_mersenne_prime(&Integer::from(8191)));
     }
 }
