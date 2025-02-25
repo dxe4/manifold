@@ -299,4 +299,51 @@ mod tests {
         assert_eq!(is_power_of_2(&Integer::from(16 + 1)), false);
         assert_eq!(is_power_of_2(&Integer::from(32 + 1)), false);
     }
+    #[test]
+    fn test_euclidean_gcd() {
+        assert_eq!(
+            euclidean_gcd(Integer::from(12), Integer::from(18)),
+            Integer::from(6)
+        );
+        assert_eq!(
+            euclidean_gcd(Integer::from(24), Integer::from(36)),
+            Integer::from(12)
+        );
+        assert_eq!(
+            euclidean_gcd(Integer::from(35), Integer::from(49)),
+            Integer::from(7)
+        );
+        assert_eq!(
+            euclidean_gcd(Integer::from(56), Integer::from(98)),
+            Integer::from(14)
+        );
+        assert_eq!(
+            euclidean_gcd(Integer::from(101), Integer::from(103)),
+            Integer::from(1)
+        );
+    }
+
+    #[test]
+    fn test_binary_gcd() {
+        assert_eq!(
+            binary_gcd(Integer::from(12), Integer::from(18)),
+            Integer::from(6)
+        );
+        assert_eq!(
+            binary_gcd(Integer::from(24), Integer::from(36)),
+            Integer::from(12)
+        );
+        assert_eq!(
+            binary_gcd(Integer::from(35), Integer::from(49)),
+            Integer::from(7)
+        );
+        assert_eq!(
+            binary_gcd(Integer::from(56), Integer::from(98)),
+            Integer::from(14)
+        );
+        assert_eq!(
+            binary_gcd(Integer::from(101), Integer::from(103)),
+            Integer::from(1)
+        );
+    }
 }
