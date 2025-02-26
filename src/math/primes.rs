@@ -5,7 +5,23 @@ use std::str::FromStr;
 use super::bitscan::bit_scan1;
 use super::common::{is_mersenne_number, is_power_of_2, lucas_lehmer_q, trailing_zeros};
 use super::miller_rabin_bases::get_miller_rabin_bases;
+use super::static_data::{PRIME_CACHE_LIMIT, SMALL_PRIME_CACHE};
 use super::threading::get_large_pool;
+
+#[inline]
+fn _check_prime_cache(n: &Integer) -> Option<bool> {
+    // What is the performance impact of this?
+    // need to measure, and if its enough speedup measure different cache size
+    if n <= &(*PRIME_CACHE_LIMIT) {
+        Some(
+            SMALL_PRIME_CACHE
+                .binary_search(&n.to_u32().unwrap())
+                .is_ok(),
+        )
+    } else {
+        None
+    }
+}
 
 fn _miller_rabin_test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
     let mut b = Integer::from(base.pow_mod_ref(t, n).unwrap());
@@ -48,6 +64,10 @@ pub fn miller_rabin_single(number: &Integer) -> bool {
     }
     if number == &Integer::from(3) {
         return true;
+    }
+    match _check_prime_cache(&number) {
+        Some(val) => return val,
+        None => {}
     }
 
     let n_minus_one = number - Integer::from(1);
@@ -152,6 +172,15 @@ mod tests {
         assert_eq!(b, false);
         assert_eq!(c, false);
         assert_eq!(d, true);
+    }
+
+    #[test]
+    fn test_prime_test_cache_hit() {
+        let a = &Integer::from(9973);
+        let b = &Integer::from(9975);
+
+        assert_eq!(miller_rabin_single(a), true);
+        assert_eq!(miller_rabin_single(b), false);
     }
 
     #[test]

@@ -9,6 +9,8 @@ pub mod miller_rabin_bases;
 pub mod num_utils;
 pub mod padic;
 pub mod primes;
+pub mod static_data;
 pub mod threading;
 pub mod traits;
 pub mod witness_accuracy;
+pub use primes::*;

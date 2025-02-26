@@ -4,7 +4,7 @@ use pyo3::types::PyBool;
 use rug::Integer;
 use std::str::FromStr;
 
-mod math;
+pub mod math;
 use math::chineese_remainder_theorem::chinese_remainder_theorem_impl;
 use math::collatz::{collatz_sequence_impl, Collatz};
 use math::fib_calc::fib_matrix;

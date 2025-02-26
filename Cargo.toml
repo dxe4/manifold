@@ -5,18 +5,24 @@ edition = "2021"
 
 [lib]
 name = "manifold_rs"
-crate-type = [ "cdylib",]
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "manifold_rs-bin" # or whatever name you want
+path = "src/bin/main.rs"
 
 [dependencies]
 indexmap = "2.7.1"
 lazy_static = "1.5.0"
 num_cpus = "1.16.0"
+once_cell = "1.20.3"
 rayon = "1.10.0"
 rug = "1.26.1"
 
 [dependencies.pyo3]
 version = "0.20.0"
-features = [ "extension-module",]
+features = ["extension-module"]
 
 [package.metadata.maturin]
-include = [ "src/manifold_rs.pyi", "py.typed",]
+include = ["src/manifold_rs.pyi", "py.typed"]
