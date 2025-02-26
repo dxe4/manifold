@@ -61,7 +61,7 @@ pub fn miller_rabin_single(number: &Integer) -> bool {
         let base_mod = if base >= number {
             (base % number).complete()
         } else {
-            base.clone()
+            Integer::from(*base)
         };
 
         if base_mod >= Integer::from(2) && !_miller_rabin_test(number, &base_mod, s, &t) {
@@ -141,6 +141,18 @@ pub fn sieve(limit: usize) -> Vec<Integer> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn test_miller_rabin_above_1mil() {
+        let a = miller_rabin_single(&Integer::from(1_000_003));
+        let b = miller_rabin_single(&Integer::from(1_000_019));
+        let c = miller_rabin_single(&Integer::from(1_000_043));
+        let d = miller_rabin_single(&Integer::from(1_000_081));
+
+        assert_eq!(a, true);
+        assert_eq!(b, false);
+        assert_eq!(c, false);
+        assert_eq!(d, true);
+    }
 
     #[test]
     fn test_miller_rabin_multiple() {
