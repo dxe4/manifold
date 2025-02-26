@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "manifold"
-version = "0.1.59"
+version = "0.1.60"
 description = "A Python library with Rust implementation"
 requires-python = "==3.13.*"
 dependencies = [ "maturin>=1.8.2", "sympy>=1.13.3", "toml>=0.10.2",]
