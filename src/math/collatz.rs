@@ -56,9 +56,9 @@ pub fn collatz_sequence_impl(n: Integer) -> Collatz {
             value: current.clone(),
         };
         current = if current.is_even() {
-            current.clone() / 2
+            current >> 1
         } else {
-            current.clone() * 3 + 1
+            (current.clone() << 1) + current + 1
         };
         let right = TwoAdicInteger {
             value: current.clone(),
