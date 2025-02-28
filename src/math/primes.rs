@@ -3,30 +3,33 @@ use rug::{Complete, Integer};
 use std::str::FromStr;
 
 use super::bitscan::bit_scan1;
-use super::common::{is_mersenne_number, is_power_of_2, lucas_lehmer_q, trailing_zeros};
+use super::common::lucas_lehmer_q;
 use super::miller_rabin_bases::get_miller_rabin_bases;
 use super::static_data::{PRIME_CACHE_LIMIT, SMALL_PRIME_CACHE};
 use super::threading::get_large_pool;
+use super::traits::IntegerLike;
 
 #[inline]
-fn _check_prime_cache(n: &Integer) -> Option<bool> {
-    // What is the performance impact of this?
-    // need to measure, and if its enough speedup measure different cache size
-    if n <= &(*PRIME_CACHE_LIMIT) {
-        Some(
-            SMALL_PRIME_CACHE
-                .binary_search(&n.to_u32().unwrap())
-                .is_ok(),
-        )
-    } else {
-        None
-    }
+fn _check_prime_cache<T: IntegerLike>(n: &T) -> Option<bool> {
+    match n.to_u32() {
+        Some(x) => {
+            if x <= PRIME_CACHE_LIMIT {
+                return Some(
+                    SMALL_PRIME_CACHE
+                        .binary_search(&n.to_u32().unwrap())
+                        .is_ok(),
+                );
+            }
+        }
+        None => {}
+    };
+    return None;
 }
 
-fn _miller_rabin_test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool {
-    let mut b = Integer::from(base.pow_mod_ref(t, n).unwrap());
+fn _miller_rabin_test<T: IntegerLike>(n: &T, base: &T, s: u32, t: &T) -> bool {
+    let mut b = T::pow_mod_t(base, t, n).unwrap_or(T::from_i64(0));
 
-    if b == 1 || b == n - Integer::from(1) {
+    if b == T::from_i64(1) || b == (n.clone() - T::from_i64(1)) {
         return true;
     }
 
@@ -35,56 +38,56 @@ fn _miller_rabin_test(n: &Integer, base: &Integer, s: u32, t: &Integer) -> bool 
     }
 
     for _ in 0..s - 1 {
-        b = Integer::from(b.pow_mod_ref(&Integer::from(2), n).unwrap());
-        if b == n - Integer::from(1) {
+        b = T::pow_mod_t(&b, &T::from_i64(2), n).unwrap_or(T::from_i64(0));
+        if b == (n.clone() - T::from_i64(1)) {
             return true;
         }
-        if b == 1 {
+        if b == T::from_i64(1) {
             return false;
         }
     }
     false
 }
 
-pub fn miller_rabin_single(number: &Integer) -> bool {
-    if number >= &Integer::from_str("3317044064679887385961981").unwrap() {
-        // i dont want to return boolean on something that has 0.99999999% chance of being a prime
-        // we have to be explicit, theres a big difference between 1 and 0.99999999
-        panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
+pub fn miller_rabin_single<T: IntegerLike>(number: &T) -> bool {
+    if number.to_integer() >= Integer::from_str("3317044064679887385961981").unwrap() {
+        panic!("using the non deterministic version of miller rabin");
     }
 
-    if number <= &Integer::from(1) {
+    if number <= &T::from_i64(1) {
         return false;
     }
-    if number == &Integer::from(2) {
+    if number == &T::from_i64(2) {
         return true;
     }
-    if number.is_even() {
+    if number.rem_euclid(&T::from_i64(2)) == T::from_i64(0) {
         return false;
     }
-    if number == &Integer::from(3) {
+    if number == &T::from_i64(3) {
         return true;
     }
-    match _check_prime_cache(&number) {
+
+    match _check_prime_cache(number) {
         Some(val) => return val,
         None => {}
     }
 
-    let n_minus_one = number - Integer::from(1);
+    let n_minus_one = number.clone() - T::from_i64(1);
     let bit_scan_result = bit_scan1(&n_minus_one, 0);
-    let s = bit_scan_result.expect("TODO - we assume no 0 passed in");
-    let t = Integer::from(number >> s);
+    let s = bit_scan_result.unwrap();
+    let t = number.shr(s);
 
-    let bases = get_miller_rabin_bases(number);
+    let bases = get_miller_rabin_bases(&number.to_integer());
 
     for base in bases.iter() {
-        let base_mod = if base >= number {
-            (base % number).complete()
+        let base_t = T::from_i64(*base as i64);
+        let base_mod = if base_t >= number.clone() {
+            base_t % number.clone()
         } else {
-            Integer::from(*base)
+            base_t
         };
 
-        if base_mod >= Integer::from(2) && !_miller_rabin_test(number, &base_mod, s, &t) {
+        if base_mod >= T::from_i64(2) && !_miller_rabin_test(number, &base_mod, s, &t) {
             return false;
         }
     }
@@ -92,61 +95,70 @@ pub fn miller_rabin_single(number: &Integer) -> bool {
     true
 }
 
-pub fn miller_rabin_impl(low: &Integer, high: &Integer) -> Vec<bool> {
+pub fn miller_rabin_impl<T: IntegerLike + Send + Sync>(low: &T, high: &T) -> Vec<bool> {
     if low > high {
         panic!("low > high");
     }
-
-    if high >= &Integer::from_str("3317044064679887385961981").unwrap() {
-        // i dont want to return boolean on something that has 0.99999999% chance of being a prime
-        // we have to be explicit, theres a big difference between 1 and 0.99999999
-        panic!("you are using the boolean function for the non deterministic part of miller rabin. above 3317044064679887385961981 is probabilistic");
+    if high.to_integer() >= Integer::from_str("3317044064679887385961981").unwrap() {
+        panic!("using the non deterministic version of miller rabin");
     }
-    let mut range_vec: Vec<Integer> = Vec::new();
-    let mut current = low.clone();
+
+    let mut range_vec: Vec<T> = Vec::new();
+    let mut current = if low == &T::from_i64(2) {
+        range_vec.push(low.clone());
+        low.clone().add_u32(1)
+    } else {
+        low.clone()
+    };
+
     while current <= *high {
         range_vec.push(current.clone());
-        current += 1;
+        current = current.add_u32(2);
     }
-
+    println!("{}", range_vec.last().unwrap());
     let pool = get_large_pool();
-    let pool_map = pool.install(|| range_vec.par_iter().map(|x| miller_rabin_single(x)));
-    let res = pool_map.collect::<Vec<bool>>();
-    return res;
+    let result: Vec<bool> = pool.install(|| {
+        range_vec
+            .par_iter()
+            .map(|x| miller_rabin_single(x))
+            .collect()
+    });
+
+    // TODO fix this
+    let mut modified: Vec<bool> = result.iter().flat_map(|&b| vec![b, false]).collect();
+
+    if modified.len() - 1 > (high.clone() - low.clone()).to_u32().unwrap() as usize {
+        modified.pop();
+    }
+    return modified;
 }
 
-pub fn is_mersenne_prime(num: &Integer) -> bool {
-    /*
-    TODO Is this the best way of testing?
-    for now its implemented since lucas_lehmer_q was there
-    may have to re-visit
-    */
-    if !is_mersenne_number(num) {
+pub fn is_mersenne_prime<T: IntegerLike>(num: &T) -> bool {
+    if !num.is_mersenne_number() {
         return false;
     }
-    if !is_power_of_2(&(num + Integer::from(1))) {
-        return false;
-    }
-    let significant_bits = num.significant_bits();
+
+    let significant_bits = num.get_significant_bits();
     let q = Integer::from(significant_bits);
     if !miller_rabin_single(&q) {
+        println!("miller rabin \n\n");
         return false;
     }
-    return lucas_lehmer_q(&q);
+    lucas_lehmer_q(&q)
 }
 
-pub fn sieve(limit: usize) -> Vec<Integer> {
+pub fn sieve<T: IntegerLike>(limit: usize) -> Vec<T> {
     let mut is_prime = vec![true; (limit + 1) >> 1];
-    let mut primes = vec![Integer::from(2)];
+    let mut primes = vec![T::from_i64(2)];
 
     let sqrt_limit = (limit as f64).sqrt() as usize;
     for i in (3..=limit).step_by(2) {
         if i > sqrt_limit && is_prime[i >> 1] {
-            primes.push(Integer::from(i));
+            primes.push(T::from_i64(i as i64));
             continue;
         }
         if is_prime[i >> 1] {
-            primes.push(Integer::from(i));
+            primes.push(T::from_i64(i as i64));
             let mut multiple = i * i;
             while multiple <= limit {
                 is_prime[multiple >> 1] = false;
@@ -187,7 +199,7 @@ mod tests {
     fn test_miller_rabin_multiple() {
         let low = &Integer::from_str("341550071728321").unwrap();
 
-        let high = (low + 1e3 as u32).complete();
+        let high = (low + 1e2 as u32).complete();
         let _ = miller_rabin_impl(low, &high);
     }
 

@@ -5,7 +5,7 @@ use std::sync::{Arc, OnceLock};
 static LARGE_POOL: OnceLock<Arc<ThreadPool>> = OnceLock::new();
 
 pub fn get_large_pool() -> Arc<ThreadPool> {
-    let num_cpus = num_cpus::get() - 1;
+    let num_cpus = num_cpus::get() - 3;
     LARGE_POOL
         .get_or_init(|| {
             Arc::new(

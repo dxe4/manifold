@@ -1,6 +1,3 @@
-extern crate rayon;
-extern crate rug;
-
 use super::num_utils::pow_large;
 use super::threading::get_large_pool;
 use rayon::prelude::*;
