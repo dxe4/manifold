@@ -65,6 +65,7 @@ pub trait IntegerLike:
     + PartialEq
     + Eq
     + Hash
+    + Ord
     + PartialOrd
     + Add<Output = Self>
     + Sub<Output = Self>
@@ -82,6 +83,7 @@ pub trait IntegerLike:
     fn abs(self) -> Self;
     fn rem_euclid(&self, other: &Self) -> Self;
     fn bitwise_and(&self, other: &Self) -> Self;
+    fn bitwise_or(&self, other: &Self) -> Self;
     fn to_integer(&self) -> Integer;
     fn is_power_of_2(&self) -> bool;
     fn is_mersenne_number(&self) -> bool;
@@ -90,6 +92,8 @@ pub trait IntegerLike:
     fn modulo(&self, other: &Self) -> Self;
     fn rem(&self, other: &Self) -> Self;
     fn divisible_by_two(&self) -> bool;
+    fn is_zero(&self) -> bool;
+    fn from_integer(num: Integer) -> Option<Self>;
 
 
     // fn modulo(self, other: Self) -> Self {
@@ -99,6 +103,12 @@ pub trait IntegerLike:
 }
 
 impl IntegerLike for i64 {
+    fn from_integer(num: Integer) -> Option<Self> {
+        num.to_i64()
+    }
+    fn is_zero(&self) -> bool {
+        self == &0
+    }
     fn divisible_by_two(&self) -> bool {
         self % 2 == 0
     }
@@ -174,6 +184,11 @@ impl IntegerLike for i64 {
     fn to_integer(&self) -> Integer {
         Integer::from(self.clone())
     }
+
+    fn bitwise_or(&self, other: &Self) -> Self {
+        *self | *other
+    }
+
     fn bitwise_and(&self, other: &Self) -> Self {
         *self & *other
     }
@@ -216,6 +231,12 @@ impl IntegerLike for i64 {
 }
 
 impl IntegerLike for Integer {
+    fn from_integer(num: Integer) -> Option<Self> {
+        Some(num)
+    }
+    fn is_zero(&self) -> bool {
+        self == &0
+    }
     fn divisible_by_two(&self) -> bool {
         self.is_even()
     }
@@ -273,6 +294,9 @@ impl IntegerLike for Integer {
     }
     fn to_integer(&self) -> Integer {
         self.clone()
+    }
+    fn bitwise_or(&self, other: &Self) -> Self {
+        (self | other).complete()
     }
     fn bitwise_and(&self, other: &Self) -> Self {
         (self & other).complete()
