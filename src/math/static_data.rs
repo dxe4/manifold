@@ -1,7 +1,10 @@
-use once_cell::sync::Lazy;
-use rug::Integer;
+use std::env;
+use std::sync::OnceLock;
 
-pub static PRIME_CACHE_LIMIT: Lazy<Integer> = Lazy::new(|| Integer::from(10_000));
+use serde_json;
+use std::fs;
+
+pub static PRIME_CACHE_LIMIT: u32 = 10_000u32;
 
 pub const SMALL_PRIME_CACHE: [u32; 1229] = [
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
@@ -80,3 +83,18 @@ pub const SMALL_PRIME_CACHE: [u32; 1229] = [
     9733, 9739, 9743, 9749, 9767, 9769, 9781, 9787, 9791, 9803, 9811, 9817, 9829, 9833, 9839, 9851,
     9857, 9859, 9871, 9883, 9887, 9901, 9907, 9923, 9929, 9931, 9941, 9949, 9967, 9973,
 ];
+
+fn load_json_vector(filename: &str) -> Result<Vec<i64>, Box<dyn std::error::Error>> {
+    let current_dir = env::current_dir()?;
+    let file_path = current_dir.join("data").join(filename);
+    println!("{}", file_path.display());
+    let content = fs::read_to_string(file_path)?;
+    let vec: Vec<i64> = serde_json::from_str(&content)?;
+    Ok(vec)
+}
+
+static PRIME_CACHE_LARGE_1E8: OnceLock<Vec<i64>> = OnceLock::new();
+
+pub fn get_prime_big_cache() -> &'static Vec<i64> {
+    PRIME_CACHE_LARGE_1E8.get_or_init(|| load_json_vector("prime_cache_large.json").unwrap())
+}
