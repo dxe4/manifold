@@ -13,6 +13,14 @@ use math::padic::{x_pow_y_pow_z_mod_k, NumberConfig};
 use math::primes::miller_rabin_impl;
 
 fn to_rug_integer(obj: &PyAny) -> PyResult<Integer> {
+    // TODO originally everything is rug::integer
+    // but this can be significantly slower , sometimes 2x slower for not using isize/usize
+    // need to provide bindings for at least:
+    // a) i64 b) integer c) any (dynamic)
+    // this is now possible with IntegerLike trait
+    // the key here is to not overflow
+    // if a user gives X where X < 2^64-1, the interval callculations can still go >2^64-1
+    // and i think pyo3 hangs when there is an overflow
     let str_val = obj.str()?.to_string();
     Integer::from_str(&str_val)
         .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid integer value."))
