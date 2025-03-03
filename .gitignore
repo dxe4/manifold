@@ -93,3 +93,5 @@ dmypy.json
 # Miscellaneous
 *.DS_Store
 Thumbs.db
+
+witness.csv

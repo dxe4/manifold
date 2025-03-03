@@ -1,4 +1,5 @@
 use std::env;
+use std::error::Error;
 use std::sync::OnceLock;
 
 use serde_json;
@@ -96,6 +97,25 @@ fn load_json_vector(filename: &str) -> Result<Vec<i64>, Box<dyn std::error::Erro
 
 static PRIME_CACHE_LARGE_1E8: OnceLock<Vec<i64>> = OnceLock::new();
 
-pub fn get_prime_big_cache() -> &'static Vec<i64> {
+fn _get_prime_big_cache() -> &'static Vec<i64> {
     PRIME_CACHE_LARGE_1E8.get_or_init(|| load_json_vector("prime_cache_large.json").unwrap())
+}
+
+pub fn get_prime_big_cache(n: &u32) -> Result<&'static Vec<i64>, Box<dyn Error>> {
+    if n <= &LARGE_PRIME_CACHE_LIMIT {
+        let _cache = _get_prime_big_cache();
+        return Ok(_cache);
+    }
+    Err(format!("N {}  > CACHE LIMIT {} ", n, LARGE_PRIME_CACHE_LIMIT).into())
+}
+
+pub fn find_in_cache(n: &u32) -> Result<bool, Box<dyn Error>> {
+    if n <= &PRIME_CACHE_LIMIT {
+        return Ok(SMALL_PRIME_CACHE.binary_search(n).is_ok());
+    }
+    if n <= &LARGE_PRIME_CACHE_LIMIT {
+        let _large_cache = _get_prime_big_cache();
+        return Ok(_large_cache.binary_search(&(n.clone() as i64)).is_ok());
+    }
+    Err(format!("N {}  > CACHE LIMIT {} ", n, LARGE_PRIME_CACHE_LIMIT).into())
 }
