@@ -34,7 +34,7 @@ fn miller_rabin_single_witness(n: &Integer, a: &Integer) -> bool {
     false
 }
 
-fn track_witness_accuracy(start: u32, end: u32) {
+pub fn track_witness_accuracy(start: u32, end: u32) {
     /*
     TODO the combinatorics here explode
     we want to gather statistics on how accurate the witness numbers are
