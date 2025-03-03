@@ -12,7 +12,7 @@ use super::threading::get_large_pool;
 fn _check_prime_cache(n: &Integer) -> Option<bool> {
     // What is the performance impact of this?
     // need to measure, and if its enough speedup measure different cache size
-    if n <= &(*PRIME_CACHE_LIMIT) {
+    if n <= &PRIME_CACHE_LIMIT {
         Some(
             SMALL_PRIME_CACHE
                 .binary_search(&n.to_u32().unwrap())

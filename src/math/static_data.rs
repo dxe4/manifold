@@ -5,6 +5,7 @@ use serde_json;
 use std::fs;
 
 pub static PRIME_CACHE_LIMIT: u32 = 10_000u32;
+pub static LARGE_PRIME_CACHE_LIMIT: u32 = 100_000_000u32;
 
 pub const SMALL_PRIME_CACHE: [u32; 1229] = [
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
