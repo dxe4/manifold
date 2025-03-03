@@ -5,79 +5,77 @@ use super::num_utils::pow_large;
 use super::traits::IntegerLike;
 use super::{primes::sieve, traits::IntegerGenerator};
 
-pub fn binary_gcd<T: IntegerLike>(mut a: T, mut b: T) -> T {
-    if a.is_zero() {
+pub fn binary_gcd(mut a: Integer, mut b: Integer) -> Integer {
+    if a == 0 {
         return b;
     }
-    if b.is_zero() {
+    if b == 0 {
         return a;
     }
 
-    let shift = (&a.bitwise_or(&b)).trailing_zeros();
+    let shift = (&(&a | &b).complete()).trailing_zeros();
 
-    a = a.shr(a.trailing_zeros());
-    b = b.shr(b.trailing_zeros());
+    a >>= a.trailing_zeros();
+    b >>= b.trailing_zeros();
 
-    while !b.is_zero() {
-        while b.divisible_by_two() {
-            b = b.shr(1);
+    while b != 0 {
+        while b.is_even() {
+            b >>= 1;
         }
 
         if a > b {
             std::mem::swap(&mut a, &mut b);
         }
 
-        b = b - a.clone();
+        b -= &a;
     }
 
-    a.shl(shift)
+    a << shift
 }
 
-pub fn euclidean_gcd<T: IntegerLike>(mut a: T, mut b: T) -> T {
-    while !b.is_zero() {
-        let temp = a % b.clone();
+pub fn euclidean_gcd(mut a: Integer, mut b: Integer) -> Integer {
+    while b != 0 {
+        let temp = a % &b;
         a = b;
         b = temp;
     }
     a
 }
 
-pub fn is_coprime<T: IntegerLike>(a: T, b: T) -> bool {
-    return binary_gcd(a, b) == T::from_i64(1);
+pub fn is_coprime(a: Integer, b: Integer) -> bool {
+    return binary_gcd(a.clone(), b.clone()) == 1;
 }
 
-pub fn lucas_lehmer_q<T: IntegerLike>(prime_q: &T) -> bool {
-    if prime_q < &T::from_i64(2) {
+pub fn lucas_lehmer_q(prime_q: &Integer) -> bool {
+    if prime_q < &2 {
         return false;
     }
 
-    let m_q = pow_large(&Integer::from(2), &(prime_q.to_integer())) - Integer::from(1);
+    let m_q = pow_large(&Integer::from(2), &prime_q) - Integer::from(1);
 
     let mut s = Integer::from(4);
 
-    let q_loop = prime_q.clone() - T::from_i64(2);
-    let mut cnt = T::from_i64(0);
+    let q_loop = prime_q - Integer::from(2);
+    let mut cnt = Integer::from(0);
 
-    while cnt < q_loop {
+    while &cnt < &q_loop {
         s = (s.square() - Integer::from(2)) % &m_q;
-        cnt = cnt + T::from_i64(1);
+        cnt += 1;
     }
 
     s.is_zero()
 }
 
-pub fn quadratic_residues<T: IntegerLike>(p: &T) -> Vec<Integer> {
+pub fn quadratic_residues(p: &Integer) -> Vec<Integer> {
     let mut residues = HashSet::new();
 
-    let half_p = p.clone() / T::from_i64(2) + T::from_i64(1);
+    let half_p = p.clone() / Integer::from(2) + Integer::from(1);
 
-    // todo fix this
-    for current in half_p.to_integer().range_to() {
-        let current_t = T::from_integer(current).unwrap();
-        let residue = T::pow_mod_t(&current_t, &T::from_i64(2), p).unwrap();
+    for current in half_p.range_to() {
+        let residue = current.pow_mod(&Integer::from(2), p).unwrap();
         residues.insert(residue);
     }
-    let mut residues_vec: Vec<Integer> = residues.into_iter().map(|x| x.to_integer()).collect();
+    let mut residues_vec: Vec<Integer> = residues.into_iter().collect();
     residues_vec.sort();
     residues_vec
 }
