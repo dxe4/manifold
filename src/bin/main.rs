@@ -1,4 +1,4 @@
-use manifold_rs::math::{primes::miller_rabin_impl, witness_accuracy::track_witness_accuracy};
+use manifold_rs::math::{primes::miller_rabin_impl, witness_accuracy::WitnessCalculator};
 use rug::Integer;
 
 fn print_prime_cache() {
@@ -22,5 +22,6 @@ fn print_prime_cache() {
 
 fn main() {
     // print_prime_cache();
-    track_witness_accuracy(5_000, 10_000);
+    let witness_calculator = WitnessCalculator::default();
+    witness_calculator.track_witness_accuracy(500, 1000);
 }
