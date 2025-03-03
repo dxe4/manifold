@@ -5,7 +5,7 @@ use std::{collections::HashMap, ops::Rem};
 
 use super::traits::IntegerLike;
 
-fn miller_rabin_single_witness<T: IntegerLike>(n: &T, a: &T) -> bool {
+pub fn miller_rabin_single_witness<T: IntegerLike>(n: &T, a: &T) -> bool {
     if n < &T::from_i64(2) || n.divisible_by_two() {
         return n == &T::from_i64(2);
     }
@@ -36,7 +36,7 @@ fn miller_rabin_single_witness<T: IntegerLike>(n: &T, a: &T) -> bool {
     false
 }
 
-fn track_witness_accuracy<T: IntegerLike + Send + Sync>(start: u32, end: u32)
+pub fn track_witness_accuracy<T: IntegerLike + Send + Sync>(start: u32, end: u32)
 where
     T: std::fmt::Display,
 {
@@ -94,15 +94,15 @@ where
         }
     }
 
-    println!("\nWitness accuracy for numbers {} to {}:", start, end);
-    println!(
-        "Total composites: {}, Total primes: {}",
-        composites.len(),
-        prime_nums.len()
-    );
-    println!(
-        "Witness | Comp Correct | Comp Tested | Comp Acc | Prime Correct | Prime Tested | Prime Acc | Combined Acc"
-    );
+    // println!("\nWitness accuracy for numbers {} to {}:", start, end);
+    // println!(
+    //     "Total composites: {}, Total primes: {}",
+    //     composites.len(),
+    //     prime_nums.len()
+    // );
+    // println!(
+    //     "Witness | Comp Correct | Comp Tested | Comp Acc | Prime Correct | Prime Tested | Prime Acc | Combined Acc"
+    // );
 
     for witness in witnesses {
         let (correct_comp, tested_comp, correct_prime, tested_prime) = stats[&witness];
@@ -122,17 +122,17 @@ where
             0.0
         };
 
-        println!(
-            "a={:3} | {:12} | {:11} | {:8.2}% | {:13} | {:12} | {:9.2}% | {:12.2}%",
-            witness,
-            correct_comp,
-            tested_comp,
-            comp_acc * 100.0,
-            correct_prime,
-            tested_prime,
-            prime_acc * 100.0,
-            combined_acc * 100.0
-        );
+        // println!(
+        //     "a={:3} | {:12} | {:11} | {:8.2}% | {:13} | {:12} | {:9.2}% | {:12.2}%",
+        //     witness,
+        //     correct_comp,
+        //     tested_comp,
+        //     comp_acc * 100.0,
+        //     correct_prime,
+        //     tested_prime,
+        //     prime_acc * 100.0,
+        //     combined_acc * 100.0
+        // );
     }
 }
 
@@ -144,6 +144,6 @@ mod tests {
     fn test_miller_rabin_witness() {
         // track_witness_accuracy::<Integer>(10_u32.pow(3), 10_u32.pow(4));
         // track_witness_accuracy(10_u32.pow(3), 10_u32.pow(4));
-        track_witness_accuracy::<Integer>(10_u32.pow(1), 10_u32.pow(2));
+        track_witness_accuracy::<Integer>(10_u32.pow(2), 10_u32.pow(3));
     }
 }
