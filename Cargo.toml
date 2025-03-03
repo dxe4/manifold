@@ -9,11 +9,10 @@ edition = "2021"
 
 [lib]
 name = "manifold_rs"
-crate-type = ["cdylib", "rlib"]
+crate-type = [ "cdylib", "rlib",]
 path = "src/lib.rs"
 
 [dependencies]
-divan = "0.1.17"
 indexmap = "2.7.1"
 lazy_static = "1.5.0"
 num_cpus = "1.16.0"
@@ -25,18 +24,7 @@ serde_json = "1.0.139"
 
 [dependencies.pyo3]
 version = "0.20.0"
-features = ["extension-module"]
+features = [ "extension-module",]
 
 [package.metadata.maturin]
-include = ["src/manifold_rs.pyi", "py.typed"]
-
-[profile.bench]
-test = false
-bench = true
-
-[profile.release]
-debug = true
-
-[[bench]]
-name = "witness"
-harness = false
+include = [ "src/manifold_rs.pyi", "py.typed",]
