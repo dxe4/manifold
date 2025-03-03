@@ -39,7 +39,7 @@ pub fn fib_matrix(n: u32) -> Integer {
         [Integer::from(1), Integer::from(0)],
     ];
     let result = matrix_exponentiation(base_matrix, n - 1);
-    result[0][0].clone()
+    result[0][0].clone() // This holds F(n)
 }
 
 #[cfg(test)]

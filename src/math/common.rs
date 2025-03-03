@@ -1,9 +1,51 @@
-use rug::{ops::Pow, Complete, Integer};
 use std::collections::HashSet;
 
-use super::num_utils::pow_large;
-use super::traits::IntegerLike;
 use super::{primes::sieve, traits::IntegerGenerator};
+use rug::{ops::Pow, Complete, Integer};
+
+use super::{num_utils::pow_large, primes::miller_rabin_single};
+
+pub fn is_power_of_2(n: &Integer) -> bool {
+    let significant_bits = n.significant_bits() - 1;
+
+    for i in 0..significant_bits {
+        if n.get_bit(i) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn is_mersenne_number(n: &Integer) -> bool {
+    /*
+    2^n -> 10000000
+    2^n -1 -> 11111111
+    so this can be detected from bitwise shifts only
+    */
+    let significant_bits = n.significant_bits() - 1;
+
+    for i in 0..significant_bits {
+        if !n.get_bit(i) {
+            return false;
+        }
+    }
+    true
+}
+
+pub fn trailing_zeros(n: &Integer) -> u32 {
+    /*
+     TODO this logic is used in multiple places
+     make one central function and use that
+    */
+    let significant_bits = n.significant_bits() - 1;
+
+    for i in 0..significant_bits {
+        if n.get_bit(i) {
+            return i;
+        }
+    }
+    significant_bits
+}
 
 pub fn binary_gcd(mut a: Integer, mut b: Integer) -> Integer {
     if a == 0 {
@@ -13,10 +55,10 @@ pub fn binary_gcd(mut a: Integer, mut b: Integer) -> Integer {
         return a;
     }
 
-    let shift = (&(&a | &b).complete()).trailing_zeros();
+    let shift = trailing_zeros(&(&a | &b).complete());
 
-    a >>= a.trailing_zeros();
-    b >>= b.trailing_zeros();
+    a >>= trailing_zeros(&a);
+    b >>= trailing_zeros(&b);
 
     while b != 0 {
         while b.is_even() {
@@ -85,13 +127,11 @@ pub fn mobius(n: &Integer) -> i32 {
         return 1;
     }
     let n_u32 = n.to_u32();
-    let primes = sieve::<Integer>(n_u32.unwrap() as usize);
+    let primes = sieve(n_u32.unwrap() as usize);
     let mut n = n.clone();
     let mut count = 0;
     for prime in primes {
-        let squared = prime.clone() << 1;
-
-        if &squared > &n {
+        if &(&prime * &prime).complete() > &n {
             break;
         }
         if n.is_divisible(&prime) {
@@ -168,6 +208,32 @@ mod tests {
     }
 
     #[test]
+    fn test_power_of_2() {
+        assert_eq!(true, is_power_of_2(&Integer::from(2)));
+        assert_eq!(true, is_power_of_2(&Integer::from(4)));
+        assert_eq!(true, is_power_of_2(&Integer::from(8)));
+        assert_eq!(true, is_power_of_2(&Integer::from(16)));
+        assert_eq!(true, is_power_of_2(&Integer::from(32)));
+        assert_eq!(true, is_power_of_2(&Integer::from(64)));
+        assert_eq!(true, is_power_of_2(&Integer::from(128)));
+        assert_eq!(true, is_power_of_2(&Integer::from(256)));
+        assert_eq!(true, is_power_of_2(&Integer::from(512)));
+    }
+
+    #[test]
+    fn test_trailing_zeros() {
+        assert_eq!(trailing_zeros(&Integer::from(2)), Integer::from(1));
+        assert_eq!(trailing_zeros(&Integer::from(4)), Integer::from(2));
+        assert_eq!(trailing_zeros(&Integer::from(8)), Integer::from(3));
+        assert_eq!(trailing_zeros(&Integer::from(16)), Integer::from(4));
+        assert_eq!(trailing_zeros(&Integer::from(32)), Integer::from(5));
+        assert_eq!(trailing_zeros(&Integer::from(64)), Integer::from(6));
+        assert_eq!(trailing_zeros(&Integer::from(128)), Integer::from(7));
+        assert_eq!(trailing_zeros(&Integer::from(256)), Integer::from(8));
+        assert_eq!(trailing_zeros(&Integer::from(512)), Integer::from(9));
+    }
+
+    #[test]
     fn test_mobius() {
         assert_eq!(mobius(&Integer::from(1)), 1);
         assert_eq!(mobius(&Integer::from(2)), -1);
@@ -182,7 +248,7 @@ mod tests {
     #[test]
     fn test_sieve_limit_10() {
         let expected = rug_int_vec![2, 3, 5, 7];
-        let res = sieve::<Integer>(10);
+        let res = sieve(10);
         assert_eq!(res, expected);
     }
 
@@ -193,6 +259,46 @@ mod tests {
         assert_eq!(residues, epxected);
     }
 
+    #[test]
+    fn test_mersennse() {
+        assert_eq!(is_mersenne_number(&Integer::from(3)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(7)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(11)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(17)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(31)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(8191)), true);
+
+        assert_eq!(is_mersenne_number(&Integer::from(8)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(16)), false);
+        assert_eq!(is_mersenne_number(&Integer::from(32)), false);
+
+        assert_eq!(is_mersenne_number(&Integer::from(8 - 1)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(16 - 1)), true);
+        assert_eq!(is_mersenne_number(&Integer::from(32 - 1)), true);
+
+        // this check for 110000
+        assert_eq!(is_mersenne_number(&Integer::from(8 + (8 >> 1))), false);
+        assert_eq!(is_mersenne_number(&Integer::from(16 + (16 >> 1))), false);
+        assert_eq!(is_mersenne_number(&Integer::from(32 + (32 >> 1))), false);
+
+        assert_eq!(is_mersenne_number(&Integer::from(8 + (8 >> 2))), false);
+        assert_eq!(is_mersenne_number(&Integer::from(8 + (8 >> 3))), false);
+    }
+
+    #[test]
+    fn test_is_power_of_w() {
+        assert_eq!(is_power_of_2(&Integer::from(8)), true);
+        assert_eq!(is_power_of_2(&Integer::from(16)), true);
+        assert_eq!(is_power_of_2(&Integer::from(32)), true);
+
+        assert_eq!(is_power_of_2(&Integer::from(8 - 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(16 - 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(32 - 1)), false);
+
+        assert_eq!(is_power_of_2(&Integer::from(8 + 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(16 + 1)), false);
+        assert_eq!(is_power_of_2(&Integer::from(32 + 1)), false);
+    }
     #[test]
     fn test_euclidean_gcd() {
         assert_eq!(
